@@ -1,0 +1,11 @@
+{
+  "name": "star-credit-management-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:frontend"
+  }
+}

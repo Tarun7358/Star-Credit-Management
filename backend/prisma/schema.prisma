@@ -1,0 +1,116 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Agency {
+  id                 String             @id @default(uuid())
+  name               String
+  slug               String             @unique
+  subscriptionPlan   String             @default("STANDARD") // BASIC, STANDARD, ENTERPRISE
+  subscriptionStatus String             @default("ACTIVE")   // ACTIVE, PAST_DUE, CANCELLED
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  users              User[]
+  leads              Lead[]
+  employeeRequests   EmployeeRequest[]
+}
+
+model User {
+  id                 String             @id @default(uuid())
+  employeeId         String             @unique
+  name               String
+  phone              String
+  email              String             @unique
+  passwordHash       String
+  role               String             // OWNER, TELECALLER, WORKER
+  status             String             @default("ACTIVE") // ACTIVE, INACTIVE
+  branch             String
+  joiningDate        DateTime           @default(now())
+  agencyId           String
+  agency             Agency             @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  assignedTeleLeads  Lead[]             @relation("TelecallerLeads")
+  assignedWorkLeads  Lead[]             @relation("WorkerLeads")
+  activityLogs       ActivityLog[]
+  uploadedDocuments  Document[]
+  createdAt          DateTime           @default(now())
+}
+
+model EmployeeRequest {
+  id                 String             @id @default(uuid())
+  name               String
+  phone              String
+  email              String
+  role               String             // TELECALLER, WORKER
+  branch             String
+  status             String             @default("PENDING") // PENDING, APPROVED, REJECTED
+  agencyId           String
+  agency             Agency             @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  requestedByUserId  String
+  createdAt          DateTime           @default(now())
+}
+
+model Lead {
+  id                 String             @id @default(uuid())
+  customerName       String
+  mobile             String
+  alternateMobile    String?
+  address            String
+  loanType           String             // HOME, BIKE, PERSONAL, MORTGAGE, BUSINESS
+  loanAmount         Float
+  bankName           String
+  status             String             @default("NEW") // NEW, CONTACTED, NOT_ANSWERED, FOLLOW_UP_REQUIRED, INTERESTED, etc.
+  workerStatus       String             @default("ASSIGNED") // ASSIGNED, CUSTOMER_MET, DOCUMENTS_COLLECTED, etc.
+  
+  telecallerId       String?
+  telecaller         User?              @relation("TelecallerLeads", fields: [telecallerId], references: [id])
+  
+  workerId           String?
+  worker             User?              @relation("WorkerLeads", fields: [workerId], references: [id])
+  
+  agencyId           String
+  agency             Agency             @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  activities         ActivityLog[]
+  documents          Document[]
+  followUps          FollowUp[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model ActivityLog {
+  id                 String             @id @default(uuid())
+  leadId             String
+  lead               Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action             String             // LEAD_IMPORTED, ASSIGNED, STATUS_UPDATE, DOCUMENT_UPLOAD
+  details            String
+  timestamp          DateTime           @default(now())
+}
+
+model Document {
+  id                 String             @id @default(uuid())
+  leadId             String
+  lead               Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fileName           String
+  fileType           String             // AADHAAR, PAN, SALARY_SLIP, BANK_STATEMENT, PROPERTY, INCOME_PROOF, OTHER
+  filePath           String
+  uploadedByUserId   String
+  uploadedBy         User               @relation(fields: [uploadedByUserId], references: [id])
+  uploadedAt         DateTime           @default(now())
+}
+
+model FollowUp {
+  id                 String             @id @default(uuid())
+  leadId             String
+  lead               Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId             String
+  scheduledTime      DateTime
+  notes              String?
+  status             String             @default("PENDING") // PENDING, COMPLETED, MISSED
+}

@@ -1,0 +1,55 @@
+# ===========================
+# Environment Files (SECRETS)
+# ===========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+frontend/.env
+frontend/.env.local
+backend/.env
+
+# ===========================
+# Node Modules
+# ===========================
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# ===========================
+# Build Outputs
+# ===========================
+frontend/dist/
+backend/dist/
+backend/build/
+
+# ===========================
+# SQLite Database (legacy)
+# ===========================
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+*.db
+*.sqlite
+
+# ===========================
+# Logs
+# ===========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===========================
+# OS & Editor
+# ===========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ===========================
+# TypeScript Build Cache
+# ===========================
+*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
