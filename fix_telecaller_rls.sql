@@ -17,8 +17,7 @@ CREATE POLICY "Clients select policy" ON public.clients
       public.get_my_role() IN ('owner', 'manager') OR
       (public.get_my_role() = 'worker' AND assigned_worker = auth.uid()) OR
       (public.get_my_role() = 'telecaller' AND assigned_telecaller = auth.uid()) OR
-      (public.get_my_role() = 'client' AND client_id = auth.uid()) OR
-      (public.get_my_role() = 'client_manager' AND client_manager_id = auth.uid())
+      (public.get_my_role() = 'client' AND client_id = auth.uid())
     )
   );
 
@@ -45,8 +44,7 @@ CREATE POLICY "Disputes select policy" ON public.disputes
           public.get_my_role() IN ('owner', 'manager') OR
           (public.get_my_role() = 'worker' AND c.assigned_worker = auth.uid()) OR
           (public.get_my_role() = 'telecaller' AND c.assigned_telecaller = auth.uid()) OR
-          (public.get_my_role() = 'client' AND c.client_id = auth.uid()) OR
-          (public.get_my_role() = 'client_manager' AND c.client_manager_id = auth.uid())
+          (public.get_my_role() = 'client' AND c.client_id = auth.uid())
         )
     )
   );
@@ -77,8 +75,7 @@ CREATE POLICY "Tasks select policy" ON public.tasks
         AND c.agency_id = public.get_my_agency_id()
         AND (
           public.get_my_role() IN ('owner', 'manager', 'worker', 'telecaller') OR
-          (public.get_my_role() = 'client' AND c.client_id = auth.uid()) OR
-          (public.get_my_role() = 'client_manager' AND c.client_manager_id = auth.uid())
+          (public.get_my_role() = 'client' AND c.client_id = auth.uid())
         )
     )
   );
@@ -110,9 +107,8 @@ CREATE POLICY "Activities select policy" ON public.customer_activities
         AND c.agency_id = public.get_my_agency_id()
         AND (
           public.get_my_role() IN ('owner', 'manager') OR
-          (public.get_my_role() = 'worker'          AND c.assigned_worker    = auth.uid()) OR
-          (public.get_my_role() = 'telecaller'      AND c.assigned_telecaller = auth.uid()) OR
-          (public.get_my_role() = 'client_manager'  AND c.client_manager_id  = auth.uid())
+          (public.get_my_role() = 'worker'      AND c.assigned_worker     = auth.uid()) OR
+          (public.get_my_role() = 'telecaller'  AND c.assigned_telecaller = auth.uid())
         )
     )
     OR customer_activities.created_by  = auth.uid()
