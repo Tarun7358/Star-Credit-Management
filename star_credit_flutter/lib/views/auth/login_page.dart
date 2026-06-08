@@ -300,11 +300,27 @@ class _LoginPageState extends State<LoginPage> {
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
+                        style: const TextStyle(color: Colors.white, fontSize: 15),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFF0F172A),
                           labelText: 'Email Address',
-                          prefixIcon: Icon(Icons.mail_outline, color: Color(0xFF64748B)),
+                          labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
                           hintText: 'Enter email address',
+                          hintStyle: const TextStyle(color: Color(0xFF64748B)),
+                          prefixIcon: const Icon(Icons.mail_outline, color: Color(0xFF64748B)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Colors.white10),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Colors.white10),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5),
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -322,14 +338,19 @@ class _LoginPageState extends State<LoginPage> {
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white, fontSize: 15),
                         decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFF0F172A),
                           labelText: 'Password',
+                          labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                          hintText: 'Enter password',
+                          hintStyle: const TextStyle(color: Color(0xFF64748B)),
                           prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF64748B)),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                              color: const Color(0xFF64748B),
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: const Color(0xFF94A3B8),
                             ),
                             onPressed: () {
                               setState(() {
@@ -337,7 +358,18 @@ class _LoginPageState extends State<LoginPage> {
                               });
                             },
                           ),
-                          hintText: 'Enter password',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Colors.white10),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Colors.white10),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5),
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
