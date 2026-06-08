@@ -18,7 +18,6 @@ import {
   DialogActions,
   Link
 } from "@mui/material";
-import { ShieldCheck } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export const Login: React.FC = () => {
