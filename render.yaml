@@ -1,0 +1,44 @@
+services:
+  # SCM Node.js Backend API
+  - type: web
+    name: scm-backend-api
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: DEFAULT_OWNER_PASSWORD
+        sync: false
+
+  # SCM React Frontend Dashboard (Static Site)
+  - type: web
+    name: scm-frontend-dashboard
+    env: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: VITE_API_URL
+        sync: false

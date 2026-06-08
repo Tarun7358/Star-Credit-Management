@@ -61,7 +61,7 @@ export const Dashboard: React.FC = () => {
         const res = await loadOwnerDashboardData(user.agency.id);
         setData(res);
       } else if (isTelecaller) {
-        const res = await loadTelecallerDashboardData(user.id, user.agency.id);
+        const res = await loadTelecallerDashboardData(user.id);
         setData(res);
       } else if (isWorker) {
         const res = await loadWorkerDashboardData(user.id);
@@ -230,7 +230,7 @@ export const Dashboard: React.FC = () => {
 
 
 
-  const loadTelecallerDashboardData = async (userId: string, agencyId: string) => {
+  const loadTelecallerDashboardData = async (userId: string) => {
     // 1. Fetch clients assigned to this telecaller
     const { data: clients, error: clientsErr } = await supabase
       .from("clients")
