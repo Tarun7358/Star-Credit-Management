@@ -19,6 +19,7 @@ import {
   Link
 } from "@mui/material";
 import { ShieldCheck } from "lucide-react";
+import logo from "../assets/logo.png";
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
@@ -58,18 +59,16 @@ export const Login: React.FC = () => {
           {/* Logo Header */}
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 4 }}>
             <Box
+              component="img"
+              src={logo}
+              alt="Star Credit Management Logo"
               sx={{
-                p: 1.5,
-                borderRadius: "50%",
-                bgcolor: "primary.main",
+                width: 72,
+                height: 72,
+                objectFit: "contain",
                 mb: 2,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
               }}
-            >
-              <ShieldCheck size={36} color="var(--panel-bg)" />
-            </Box>
+            />
             <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: -0.5, mb: 0.5 }}>
               Star Credit Management
             </Typography>

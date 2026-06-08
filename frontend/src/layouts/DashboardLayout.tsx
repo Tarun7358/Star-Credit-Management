@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useThemeContext } from "../context/ThemeContext";
+import logo from "../assets/logo.png";
 import {
   Box,
   Drawer,
@@ -82,18 +83,17 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.paper" }}>
       {/* Brand Header */}
       <Box sx={{ p: 2.5, display: "flex", alignItems: "center", gap: 1.5 }}>
-        <Avatar
+        <Box
+          component="img"
+          src={logo}
+          alt="SCM Logo"
           sx={{
-            bgcolor: "primary.main",
             width: 40,
             height: 40,
-            fontWeight: "bold",
-            fontSize: "1.2rem",
-            color: "background.paper"
+            objectFit: "contain",
+            borderRadius: "50%"
           }}
-        >
-          SCM
-        </Avatar>
+        />
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
             STAR CREDIT

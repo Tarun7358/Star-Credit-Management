@@ -115,13 +115,14 @@ class _ResponsiveDashboardState extends State<ResponsiveDashboard> {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.asset(
+                        'assets/logo.png',
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.contain,
                       ),
-                      child: const Icon(Icons.shield, color: Color(0xFF45F3FF), size: 24),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

@@ -236,17 +236,13 @@ class _LoginPageState extends State<LoginPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6366F1).withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.3)),
-                            ),
-                            child: const Icon(
-                              Icons.shield_outlined,
-                              color: Color(0xFF45F3FF),
-                              size: 28,
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(
+                              'assets/logo.png',
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.contain,
                             ),
                           ),
                           const SizedBox(width: 12),
