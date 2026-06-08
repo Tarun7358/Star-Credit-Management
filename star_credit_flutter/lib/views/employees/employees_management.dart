@@ -5,7 +5,7 @@ import '../../services/supabase_service.dart';
 import '../../models/user_model.dart';
 
 class EmployeesManagementPage extends StatefulWidget {
-  const EmployeesManagementPage({Key? key}) : super(key: key);
+  const EmployeesManagementPage({super.key});
 
   @override
   State<EmployeesManagementPage> createState() => _EmployeesManagementPageState();
@@ -69,7 +69,7 @@ class _EmployeesManagementPageState extends State<EmployeesManagementPage> {
         children: [
           Text(
             'Active Agency Staff',
-            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
+            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -81,7 +81,7 @@ class _EmployeesManagementPageState extends State<EmployeesManagementPage> {
                   final emp = _employees[idx];
                   return ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: const Color(0xFF6366F1).withOpacity(0.12),
+                      backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.12),
                       child: const Icon(Icons.person, color: Color(0xFF45F3FF)),
                     ),
                     title: Text(emp.fullName, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -112,7 +112,7 @@ class _EmployeesManagementPageState extends State<EmployeesManagementPage> {
         children: [
           Text(
             'Pending Approval Requests',
-            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
+            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -197,7 +197,7 @@ class _EmployeesManagementPageState extends State<EmployeesManagementPage> {
         // Title
         Text(
           'Agency Staff Control Board',
-          style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
+          style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
         ),
         Text(
           'Approve or deny registrations and review staff members roles settings.',

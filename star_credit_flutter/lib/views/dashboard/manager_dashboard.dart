@@ -6,7 +6,7 @@ import '../../models/client_model.dart';
 import '../../models/user_model.dart';
 
 class ManagerDashboardView extends StatefulWidget {
-  const ManagerDashboardView({Key? key}) : super(key: key);
+  const ManagerDashboardView({super.key});
 
   @override
   State<ManagerDashboardView> createState() => _ManagerDashboardViewState();
@@ -88,7 +88,7 @@ class _ManagerDashboardViewState extends State<ManagerDashboardView> {
                         style: GoogleFonts.outfit(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -216,7 +216,7 @@ class _ManagerDashboardViewState extends State<ManagerDashboardView> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 28),

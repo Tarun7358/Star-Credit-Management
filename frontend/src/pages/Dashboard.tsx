@@ -13,6 +13,7 @@ import {
   Button,
   List,
   Chip,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -243,59 +244,80 @@ export const Dashboard: React.FC = () => {
 
     if (clientsErr) throw clientsErr;
 
-    const clientIds = (clients || []).map(c => c.client_id);
+    // 2. Fetch all activities logged by this telecaller
+    const { data: actData } = await supabase
+      .from("customer_activities")
+      .select(`
+        *,
+        clients(customer_name, mobile)
+      `)
+      .eq("created_by", userId)
+      .order("created_at", { ascending: false });
 
-    // 2. Fetch activities logged by this telecaller
-    let activities: any[] = [];
-    if (clientIds.length > 0) {
-      const { data: actData } = await supabase
-        .from("customer_activities")
-        .select("*")
-        .in("client_id", clientIds)
-        .order("created_at", { ascending: false });
-      activities = actData || [];
-    }
+    const activities = actData || [];
 
     const now = new Date();
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
 
     const assignedClientsCount = clients?.length || 0;
-    const callsDoneToday = activities.filter(a => {
-      const d = new Date(a.created_at);
-      return a.activity_type.includes("Call") && d >= todayStart && d <= todayEnd && a.status === "RECORDED";
-    }).length;
+    const activeCases = (clients || []).filter(c => c.status !== "COMPLETED").length;
+    const closedCases = (clients || []).filter(c => c.status === "COMPLETED").length;
+    
+    const ptpCases = (clients || []).filter(c => c.current_stage === "PTP").length;
+    const followupPending = (clients || []).filter(c => c.current_stage === "Follow-Up").length;
+    const paymentReceivedCases = (clients || []).filter(c => c.current_stage === "Payment Received").length;
 
-    const pendingCallbacks = activities.filter(a =>
+    // Daily Activities
+    const callsMadeToday = activities.filter(a => a.activity_type.includes("Call") && new Date(a.created_at) >= todayStart).length;
+    const connectedCallsToday = activities.filter(a => a.activity_type.includes("Call") && a.call_result === "Connected" && new Date(a.created_at) >= todayStart).length;
+    const newNotesToday = activities.filter(a => a.activity_type === "Note" && new Date(a.created_at) >= todayStart).length;
+    const ptpsToday = activities.filter(a => a.outcome === "PTP" && new Date(a.created_at) >= todayStart).length;
+    const collectionsToday = activities.filter(a => a.activity_type === "Payment" && new Date(a.created_at) >= todayStart).length;
+
+    // Callbacks
+    const pendingCallbacksList = activities.filter(a =>
       a.status === "PENDING" && a.callback_time && new Date(a.callback_time) >= now
     );
-    const missedCallbacks = activities.filter(a =>
+    const missedCallbacksCount = activities.filter(a =>
       a.status === "PENDING" && a.callback_time && new Date(a.callback_time) < now
     ).length;
 
-    const closedCases = (clients || []).filter(c => c.status === "COMPLETED").length;
-    const conversionRate = assignedClientsCount > 0 ? Math.round((closedCases / assignedClientsCount) * 100) : 0;
+    // Recovery Details
+    const monthlyRecoveryAmount = (clients || []).reduce((acc, c) => acc + (parseFloat(c.total_collections) || 0), 0);
+    const monthlyTargetAmount = (clients || []).reduce((acc, c) => acc + (parseFloat(c.outstanding_amount) || 0) + (parseFloat(c.total_collections) || 0), 0);
+    const recoveryRate = monthlyTargetAmount > 0 ? Math.round((monthlyRecoveryAmount / monthlyTargetAmount) * 100) : 0;
 
     const stats = {
       assignedClientsCount,
-      callsDoneToday,
-      pendingCallbacks: pendingCallbacks.length,
-      missedCallbacks,
-      conversionRate,
-      closedCases
+      activeCases,
+      closedCases,
+      ptpCases,
+      followupPending,
+      paymentReceivedCases,
+      callsMadeToday,
+      connectedCallsToday,
+      newNotesToday,
+      ptpsToday,
+      collectionsToday,
+      pendingCallbacks: pendingCallbacksList.length,
+      missedCallbacks: missedCallbacksCount,
+      monthlyRecoveryAmount,
+      monthlyTargetAmount,
+      recoveryRate
     };
 
-    const recentFollowUps = pendingCallbacks.slice(0, 5).map((act: any) => ({
+    const recentFollowUps = pendingCallbacksList.slice(0, 5).map((act: any) => ({
       id: act.activity_id,
       scheduledTime: act.callback_time,
       notes: act.notes,
       lead: {
-        customerName: act.client_name || "Unknown",
-        mobile: act.client_mobile || ""
+        customerName: act.clients?.customer_name || "Unknown",
+        mobile: act.clients?.mobile || ""
       }
     }));
 
-    return { stats, recentFollowUps };
+    return { stats, recentFollowUps, clients: clients || [] };
   };
 
   const loadWorkerDashboardData = async (userId: string) => {
@@ -632,38 +654,39 @@ export const Dashboard: React.FC = () => {
   // TELECALLER DASHBOARD VIEW
   // ==========================================
   const renderTelecallerDashboard = () => {
-    const { stats, recentFollowUps } = data;
+    const { stats, recentFollowUps, clients } = data;
 
     const cards = [
-      { title: "Assigned Clients", value: stats.assignedClientsCount, icon: <Briefcase size={22} />, color: "text.secondary" },
-      { title: "Calls Today", value: stats.callsDoneToday, icon: <PhoneCall size={22} />, color: "success.main" },
-      { title: "Pending Callbacks", value: stats.pendingCallbacks, icon: <CalendarDays size={22} />, color: "warning.main" },
-      { title: "Missed Callbacks", value: stats.missedCallbacks, icon: <AlertTriangle size={22} />, color: "error.main" },
-      { title: "Closed Cases", value: stats.closedCases, icon: <CheckCircle size={22} />, color: "success.main" },
-      { title: "Conversion Rate", value: `${stats.conversionRate}%`, icon: <TrendingUp size={22} />, color: "text.primary" }
+      { title: "Assigned Portfolio", value: stats.assignedClientsCount, detail: `${stats.activeCases} active • ${stats.closedCases} closed`, icon: <Briefcase size={22} />, color: "text.secondary" },
+      { title: "Outreach Today", value: stats.callsMadeToday, detail: `${stats.connectedCallsToday} calls connected`, icon: <PhoneCall size={22} />, color: "success.main" },
+      { title: "PTPs Recorded Today", value: stats.ptpsToday, detail: `${stats.collectionsToday} payments received`, icon: <CheckCircle size={22} />, color: "primary.main" },
+      { title: "Callbacks / Reminders", value: stats.pendingCallbacks, detail: `${stats.missedCallbacks} overdue callback(s)`, icon: <CalendarDays size={22} />, color: stats.missedCallbacks > 0 ? "error.main" : "warning.main" }
     ];
+
+    const ptpClientsList = (clients || []).filter((c: any) => c.current_stage === "PTP");
 
     return (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Welcome Section */}
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 800 }}>
-              Telecalling Station: {user?.name}
+              Telecalling Command Center: {user?.name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Log call outcomes, schedule callbacks, and track your assigned clients.
+              Track your daily outreach metrics, schedule follow-up actions, and monitor case closures.
             </Typography>
           </Box>
           <Button variant="contained" component={Link} to="/clients" sx={{ gap: 1, bgcolor: "#000", color: "#fff", "&:hover": { bgcolor: "#222" } }}>
-            View My Clients
+            Open Client List <ArrowUpRight size={16} />
           </Button>
         </Box>
 
-        {/* Dashboard Grid */}
+        {/* Dashboard Core Stats */}
         <Grid container spacing={3}>
           {cards.map((card) => (
-            <Grid item xs={12} sm={6} md={2} key={card.title}>
-              <Card className="glass-card-hover">
+            <Grid item xs={12} sm={6} md={3} key={card.title}>
+              <Card className="glass-card-hover" sx={{ p: 0.5 }}>
                 <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1, p: 2.5 }}>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 700, textTransform: "uppercase" }}>
@@ -674,19 +697,24 @@ export const Dashboard: React.FC = () => {
                   <Typography variant="h4" sx={{ fontWeight: 800 }}>
                     {card.value}
                   </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    {card.detail}
+                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
 
+        {/* Core Layout Split */}
         <Grid container spacing={3.5}>
-          {/* List of pending callbacks */}
-          <Grid item xs={12} md={7}>
+          {/* Left Panel: Callbacks and PTP List */}
+          <Grid item xs={12} md={8} sx={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
+            {/* Scheduled Callbacks */}
             <Card sx={{ p: 1 }}>
               <CardContent>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 2.5, display: "flex", alignItems: "center", gap: 1 }}>
-                  <CalendarDays size={20} /> Upcoming Scheduled Callbacks
+                  <CalendarDays size={20} /> Upcoming Callbacks & Reminders
                 </Typography>
                 <List sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                   {recentFollowUps.map((fu: any, idx: number) => {
@@ -702,7 +730,7 @@ export const Dashboard: React.FC = () => {
                               Mobile: {fu.lead.mobile}
                             </Typography>
                             <Typography variant="body2" sx={{ mt: 0.5, color: "text.primary", fontWeight: 500 }}>
-                              Notes: "{fu.notes || "No extra instruction."}"
+                              Notes: "{fu.notes || "No callback notes recorded."}"
                             </Typography>
                           </Box>
                           <Box sx={{ textAlign: "right" }}>
@@ -714,7 +742,7 @@ export const Dashboard: React.FC = () => {
                             />
                             {isOverdue && (
                               <Typography variant="caption" color="error.main" sx={{ display: "block", mt: 0.5, fontWeight: 700 }}>
-                                MISSED/OVERDUE
+                                OVERDUE REMINDER
                               </Typography>
                             )}
                           </Box>
@@ -729,24 +757,131 @@ export const Dashboard: React.FC = () => {
                 </List>
               </CardContent>
             </Card>
+
+            {/* PTP Cases Portfolio */}
+            <Card sx={{ p: 1 }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                  Your Promise-To-Pay (PTP) Ledger
+                </Typography>
+                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 260, overflowY: "auto" }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: "#F8F8F8" }}>
+                        <TableCell sx={{ fontWeight: 700 }}>Customer Name</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Outstanding Balance</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Total Collections</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>PTP Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {ptpClientsList.length > 0 ? (
+                        ptpClientsList.map((client: any) => (
+                          <TableRow key={client.client_id} hover>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{client.customer_name}</Typography>
+                              <Typography variant="caption" color="text.secondary">{client.mobile}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontWeight: 700 }}>₹{client.outstanding_amount}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: "success.main" }}>₹{client.total_collections || 0}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={`${client.progress_percentage}% Progress`} 
+                                size="small" 
+                                color="primary" 
+                                sx={{ fontWeight: 700, fontSize: "10px" }} 
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} align="center">
+                            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                              No active cases in the PTP stage.
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
           </Grid>
 
-          {/* Quick guide */}
-          <Grid item xs={12} md={5}>
+          {/* Right Panel: Recovery Target Progress & Guidelines */}
+          <Grid item xs={12} md={4} sx={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
+            {/* Monthly Target Progression */}
+            <Card sx={{ p: 2 }}>
+              <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, alignSelf: "flex-start" }}>
+                  Monthly Recovery Target
+                </Typography>
+                <Box sx={{ position: "relative", display: "inline-flex", mt: 2 }}>
+                  <CircularProgress
+                    variant="determinate"
+                    value={stats.recoveryRate}
+                    size={140}
+                    thickness={6}
+                    sx={{
+                      color: "primary.main",
+                      "& .MuiCircularProgress-circle": {
+                        strokeLinecap: "round"
+                      }
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      top: 0,
+                      left: 0,
+                      bottom: 0,
+                      right: 0,
+                      position: "absolute",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                  >
+                    <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                      {stats.recoveryRate}%
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Recovery Rate
+                    </Typography>
+                  </Box>
+                </Box>
+                <Stack spacing={1} sx={{ width: "100%", mt: 2 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography variant="caption" color="text.secondary">Total Collected</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: "success.main" }}>₹{stats.monthlyRecoveryAmount}</Typography>
+                  </Box>
+                  <Divider />
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography variant="caption" color="text.secondary">Total Portfolio Value</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>₹{stats.monthlyTargetAmount}</Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions Guide */}
             <Card sx={{ bgcolor: "var(--panel-bg)" }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, color: "primary.main" }}>
-                  Operational Guide
+                  Telecalling Guidelines
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
-                  1. Open a client file from the <strong>Clients</strong> page.<br />
-                  2. Log each call outcome — Connected, No Answer, Callback Requested, etc.<br />
-                  3. When a customer requests a callback, schedule the date & time.<br />
-                  4. Check this dashboard daily for missed callbacks and overdue follow-ups.
+                  • Open client files to review their current pipeline step and historical worker logs.<br />
+                  • Always log call outcomes to trigger live state updates.<br />
+                  • Utilize <strong>Schedule Follow-Up</strong> to queue reminders for clients requesting callbacks.<br />
+                  • Ensure Promises to Pay are registered with exact payment amounts and expected dates.
                 </Typography>
-                <Button variant="outlined" component={Link} to="/clients" fullWidth>
-                  Open Client List
-                </Button>
               </CardContent>
             </Card>
           </Grid>

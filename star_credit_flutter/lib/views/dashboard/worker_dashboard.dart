@@ -415,7 +415,11 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
   @override
   Widget build(BuildContext context) {
     if (_loading && _assignedClients.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      );
     }
 
     final filteredClients = _assignedClients.where((client) {
@@ -436,9 +440,13 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
             children: [
               Expanded(
                 child: TextField(
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  decoration: InputDecoration(
                     hintText: 'Search by client name...',
-                    prefixIcon: Icon(Icons.search, color: Colors.white38),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                    ),
                   ),
                   onChanged: (val) {
                     setState(() {
@@ -451,14 +459,19 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white24),
+                  border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _statusFilter,
-                    dropdownColor: Colors.black,
+                    dropdownColor: Theme.of(context).cardColor,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    iconEnabledColor: Theme.of(context).colorScheme.onSurface,
                     items: [
                       const DropdownMenuItem(value: "ALL", child: Text("All Statuses")),
                       ...AppConstants.workflowStages.map((stage) {
@@ -682,14 +695,20 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
       return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onBackground),
             onPressed: () {
               setState(() {
                 _selectedClient = null;
               });
             },
           ),
-          title: Text(_selectedClient!.customerName),
+          title: Text(
+            _selectedClient!.customerName,
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onBackground,
+            ),
+          ),
           backgroundColor: Colors.transparent,
           elevation: 0,
         ),

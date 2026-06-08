@@ -5,7 +5,7 @@ import '../../services/supabase_service.dart';
 import '../../services/biometric_service.dart';
 
 class SettingsView extends StatefulWidget {
-  const SettingsView({Key? key}) : super(key: key);
+  const SettingsView({super.key});
 
   @override
   State<SettingsView> createState() => _SettingsViewState();
@@ -78,10 +78,12 @@ class _SettingsViewState extends State<SettingsView> {
         emergencyContact: _emergencyController.text.trim(),
         profilePhotoUrl: _photoController.text.trim(),
       );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update profile: $e')),
       );
@@ -104,10 +106,12 @@ class _SettingsViewState extends State<SettingsView> {
       await auth.changePassword(_passwordController.text);
       _passwordController.clear();
       _confirmPasswordController.clear();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password changed successfully!')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update password: $e')),
       );
@@ -121,10 +125,12 @@ class _SettingsViewState extends State<SettingsView> {
     try {
       final auth = Provider.of<SupabaseService>(context, listen: false);
       final count = await auth.syncOfflineCheckouts();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Offline Sync Completed. $count visits successfully updated.')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sync failed: $e')),
       );

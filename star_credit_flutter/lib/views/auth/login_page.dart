@@ -414,8 +414,22 @@ class _LoginPageState extends State<LoginPage> {
                                   const SizedBox(height: 14),
                                   OutlinedButton.icon(
                                     onPressed: _handleBiometricAuth,
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF45F3FF),
+                                      side: const BorderSide(color: Color(0xFF45F3FF), width: 1.5),
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
                                     icon: const Icon(Icons.fingerprint, color: Color(0xFF45F3FF)),
-                                    label: const Text('Biometric Quick Access'),
+                                    label: Text(
+                                      'Biometric Quick Access',
+                                      style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                      ),
+                                    ),
                                   ),
                                 ]
                               ],

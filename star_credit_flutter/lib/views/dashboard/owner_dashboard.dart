@@ -7,7 +7,7 @@ import '../../models/client_model.dart';
 import '../../models/audit_log_model.dart';
 
 class OwnerDashboardView extends StatefulWidget {
-  const OwnerDashboardView({Key? key}) : super(key: key);
+  const OwnerDashboardView({super.key});
 
   @override
   State<OwnerDashboardView> createState() => _OwnerDashboardViewState();
@@ -54,7 +54,6 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
     final totalClients = _clients.length;
     final activeCases = _clients.where((c) => c.status != 'COMPLETED' && c.status != 'NEW_LEAD').length;
     final completedCases = _clients.where((c) => c.status == 'COMPLETED').length;
-    final newLeads = _clients.where((c) => c.status == 'NEW_LEAD').length;
 
     // Responsive grid counts
     final size = MediaQuery.of(context).size;
@@ -80,7 +79,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                         style: GoogleFonts.outfit(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -147,7 +146,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 28),

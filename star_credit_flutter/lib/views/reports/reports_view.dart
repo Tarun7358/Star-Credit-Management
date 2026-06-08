@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,10 +7,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../services/supabase_service.dart';
 import '../../models/client_model.dart';
-import '../../config/constants.dart';
 
 class ReportsView extends StatefulWidget {
-  const ReportsView({Key? key}) : super(key: key);
+  const ReportsView({super.key});
 
   @override
   State<ReportsView> createState() => _ReportsViewState();
@@ -52,7 +50,7 @@ class _ReportsViewState extends State<ReportsView> {
       buffer.writeln('"${c.customerName}","${c.mobile}","${c.address}","${c.status}","${c.workerName ?? ""}","${c.managerName ?? ""}"');
     }
 
-    final csvContent = buffer.toString();
+    // csvContent built but not needed beyond snackbar in this version
     
     if (kIsWeb) {
       // For web, print or copy (could trigger file download)
@@ -110,8 +108,6 @@ class _ReportsViewState extends State<ReportsView> {
       return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
     }
 
-    final size = MediaQuery.of(context).size;
-    final bool isWide = size.width > 900;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -119,7 +115,7 @@ class _ReportsViewState extends State<ReportsView> {
         // Title
         Text(
           'Reports & Bulk Exporters',
-          style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
+          style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
         ),
         Text(
           'Generate official agency case PDF documents or export clients lists to CSV spreadsheets.',
@@ -185,17 +181,6 @@ class _ReportsViewState extends State<ReportsView> {
           ),
         ),
       ],
-    );
-  }
-}
-pw.Widget _pwBulletText(String text) {
-  return pw.Bullet(text: text);
-}
-extension on pw.Column {
-  pw.Widget TableList({required List<pw.Widget> children}) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: children,
     );
   }
 }

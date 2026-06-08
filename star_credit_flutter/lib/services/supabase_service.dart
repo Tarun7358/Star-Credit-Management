@@ -146,6 +146,8 @@ class SupabaseService with ChangeNotifier {
         query = query.eq('assigned_worker', _currentUser!.userId);
       } else if (isClient) {
         query = query.eq('client_id', _currentUser!.userId);
+      } else if (isTelecaller) {
+        query = query.eq('assigned_telecaller', _currentUser!.userId);
       }
 
       final List<dynamic> data = await query.order('created_at', ascending: false);

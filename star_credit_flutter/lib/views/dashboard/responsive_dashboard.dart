@@ -15,7 +15,7 @@ import '../employees/employees_management.dart';
 import '../reports/reports_view.dart';
 
 class ResponsiveDashboard extends StatefulWidget {
-  const ResponsiveDashboard({Key? key}) : super(key: key);
+  const ResponsiveDashboard({super.key});
 
   @override
   State<ResponsiveDashboard> createState() => _ResponsiveDashboardState();
@@ -254,8 +254,12 @@ class _ResponsiveDashboardState extends State<ResponsiveDashboard> {
           : AppBar(
               title: Text(
                 navItems[_selectedIndex]["label"],
-                style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
+              iconTheme: const IconThemeData(color: Colors.white),
               backgroundColor: const Color(0xFF1E293B),
               elevation: 0,
             ),

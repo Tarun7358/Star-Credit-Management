@@ -7,6 +7,12 @@
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE public.users ADD CONSTRAINT users_role_check CHECK (role IN ('owner', 'manager', 'worker', 'client', 'telecaller', 'client_manager'));
 
+-- Redefine get_my_role to be case-insensitive by using lower()
+CREATE OR REPLACE FUNCTION public.get_my_role()
+RETURNS text AS $$
+  SELECT lower(role) FROM public.users WHERE user_id = auth.uid();
+$$ LANGUAGE sql SECURITY DEFINER;
+
 -- 2. Add client_manager_id to public.clients Table
 ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS client_manager_id uuid REFERENCES public.users(user_id) ON DELETE SET NULL;
 

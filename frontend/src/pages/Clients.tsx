@@ -36,10 +36,8 @@ import {
   DialogContent,
   DialogActions,
   Stack,
-  Stepper,
-  Step,
-  StepLabel,
   CircularProgress,
+  LinearProgress,
   Alert
 } from "@mui/material";
 import {
@@ -56,18 +54,6 @@ import {
   Phone
 } from "lucide-react";
 
-const WORKFLOW_STAGES = [
-  "NEW_LEAD",
-  "VERIFICATION",
-  "DOCUMENT_COLLECTION",
-  "CREDIT_ANALYSIS",
-  "DISPUTE_CREATION",
-  "BUREAU_SUBMISSION",
-  "REVIEW",
-  "FOLLOW_UP",
-  "COMPLETED"
-];
-
 const STAGE_LABELS: Record<string, string> = {
   NEW_LEAD: "New Lead",
   VERIFICATION: "Verification",
@@ -78,6 +64,17 @@ const STAGE_LABELS: Record<string, string> = {
   REVIEW: "Review Case",
   FOLLOW_UP: "Follow-Up",
   COMPLETED: "Completed"
+};
+
+const STAGE_LIST = ["New Lead", "Contacted", "Follow-Up", "PTP", "Field Visit", "Payment Received", "Closed"];
+const STAGE_PROGRESS: Record<string, number> = {
+  "New Lead": 15,
+  "Contacted": 30,
+  "Follow-Up": 45,
+  "PTP": 60,
+  "Field Visit": 75,
+  "Payment Received": 90,
+  "Closed": 100
 };
 
 export const Clients: React.FC = () => {
@@ -99,6 +96,7 @@ export const Clients: React.FC = () => {
   const [disputes, setDisputes] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [timeline, setTimeline] = useState<any[]>([]);
+  const [visits, setVisits] = useState<any[]>([]);
 
   // GPS Verification state
   const [gpsStatus, setGpsStatus] = useState<"idle" | "checking" | "verified" | "too_far" | "no_coords" | "denied">("idle");
@@ -161,6 +159,26 @@ export const Clients: React.FC = () => {
     callbackTime: ""
   });
 
+  // Telecaller Command Center Dialog States
+  const [ptpDialogOpen, setPtpDialogOpen] = useState(false);
+  const [ptpAmount, setPtpAmount] = useState("");
+  const [ptpDate, setPtpDate] = useState("");
+
+  const [followupDialogOpen, setFollowupDialogOpen] = useState(false);
+  const [followupDate, setFollowupDate] = useState("");
+  const [followupNotes, setFollowupNotes] = useState("");
+
+  const [visitRequestDialogOpen, setVisitRequestDialogOpen] = useState(false);
+  const [visitInstructions, setVisitInstructions] = useState("");
+  const [visitWorkerId, setVisitWorkerId] = useState("");
+
+  const [escalateDialogOpen, setEscalateDialogOpen] = useState(false);
+  const [escalationNotes, setEscalationNotes] = useState("");
+
+  const [collectionDialogOpen, setCollectionDialogOpen] = useState(false);
+  const [collectedAmount, setCollectedAmount] = useState("");
+  const [collectionMode, setCollectionMode] = useState("UPI");
+
   // ---- GPS Haversine distance utility ----
   const getDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371000;
@@ -217,8 +235,20 @@ export const Clients: React.FC = () => {
         .from("clients")
         .select(`
           *,
-          worker:users!clients_assigned_worker_fkey(full_name),
-          manager:users!clients_assigned_manager_fkey(full_name)
+          worker:users!clients_assigned_worker_fkey(
+            user_id,
+            full_name,
+            phone,
+            role,
+            employees(employee_id)
+          ),
+          telecaller:users!clients_assigned_telecaller_fkey(
+            user_id,
+            full_name,
+            phone,
+            role,
+            employees(employee_id)
+          )
         `)
         .eq("is_archived", false);
 
@@ -270,6 +300,7 @@ export const Clients: React.FC = () => {
         .order("check_in_time", { ascending: false });
 
       const visits = visitData || [];
+      setVisits(visits);
 
       const combinedTimeline: any[] = [];
       
@@ -317,6 +348,38 @@ export const Clients: React.FC = () => {
       setTimeline(combinedTimeline);
     } catch (err) {
       console.error("Error loading activities/visits:", err);
+    }
+  };
+
+  const refreshSelectedClient = async (clientId: string) => {
+    try {
+      const { data: updatedClient } = await supabase
+        .from("clients")
+        .select(`
+          *,
+          worker:users!clients_assigned_worker_fkey(
+            user_id,
+            full_name,
+            phone,
+            role,
+            employees(employee_id)
+          ),
+          telecaller:users!clients_assigned_telecaller_fkey(
+            user_id,
+            full_name,
+            phone,
+            role,
+            employees(employee_id)
+          )
+        `)
+        .eq("client_id", clientId)
+        .single();
+      if (updatedClient) {
+        setSelectedClient(updatedClient);
+      }
+      await loadClientActivitiesAndVisits(clientId);
+    } catch (err) {
+      console.error("Failed to refresh selected client details:", err);
     }
   };
 
@@ -434,37 +497,277 @@ export const Clients: React.FC = () => {
     }
   };
 
-  const updateWorkflowStage = async (newStage: string) => {
+  const handleStaffAssignment = async (roleType: "worker" | "telecaller", staffId: string) => {
     if (!selectedClient) return;
     try {
-      const { error } = await supabase
-        .from("clients")
-        .update({ status: newStage })
-        .eq("client_id", selectedClient.client_id);
+      let field = "";
+      if (roleType === "worker") field = "assigned_worker";
+      else if (roleType === "telecaller") field = "assigned_telecaller";
 
-      if (error) throw error;
-
-      setSelectedClient((prev: any) => ({ ...prev, status: newStage }));
-      loadData();
-    } catch (err: any) {
-      alert(err.message || "Failed to update status.");
-    }
-  };
-
-  const handleStaffAssignment = async (roleType: "worker" | "manager", staffId: string) => {
-    if (!selectedClient) return;
-    try {
-      const field = roleType === "worker" ? "assigned_worker" : "assigned_manager";
       const { error } = await supabase
         .from("clients")
         .update({ [field]: staffId || null })
         .eq("client_id", selectedClient.client_id);
 
       if (error) throw error;
+      setSelectedClient((prev: any) => prev ? { ...prev, [field]: staffId || null } : null);
       loadData();
       alert("Assignments updated successfully.");
     } catch (err: any) {
       alert(err.message || "Assignment failed.");
+    }
+  };
+
+  // --- TELECALLER COMMAND CENTER HANDLERS ---
+  const handleCreatePTP = async () => {
+    if (!selectedClient) return;
+    if (!ptpAmount || !ptpDate) {
+      alert("Please enter both PTP Amount and PTP Date.");
+      return;
+    }
+    try {
+      // 1. Update client status, stage, progress
+      const { error: clientErr } = await supabase
+        .from("clients")
+        .update({
+          status: "FOLLOW_UP",
+          current_stage: "PTP",
+          progress_percentage: 60,
+          stage_updated_at: new Date().toISOString()
+        })
+        .eq("client_id", selectedClient.client_id);
+
+      if (clientErr) throw clientErr;
+
+      // 2. Log customer activity
+      const { error: actErr } = await supabase
+        .from("customer_activities")
+        .insert({
+          client_id: selectedClient.client_id,
+          employee_id: user?.id,
+          activity_type: "Outbound Call",
+          call_result: "Connected",
+          outcome: "PTP",
+          notes: `[PTP Created] Promised Amount: ₹${ptpAmount} to be paid on ${ptpDate}.`
+        });
+
+      if (actErr) throw actErr;
+
+      setPtpDialogOpen(false);
+      setPtpAmount("");
+      setPtpDate("");
+      
+      // Refresh
+      await refreshSelectedClient(selectedClient.client_id);
+      await loadData();
+      alert("PTP successfully recorded.");
+    } catch (err: any) {
+      alert(err.message || "Failed to create PTP.");
+    }
+  };
+
+  const handleScheduleFollowup = async () => {
+    if (!selectedClient) return;
+    if (!followupDate || !followupNotes) {
+      alert("Please enter both follow-up date and notes.");
+      return;
+    }
+    try {
+      const scheduledTime = new Date(followupDate).toISOString();
+
+      // 1. Update next follow up date
+      const { error: clientErr } = await supabase
+        .from("clients")
+        .update({
+          next_follow_up_date: scheduledTime,
+          current_stage: "Follow-Up",
+          progress_percentage: 45,
+          stage_updated_at: new Date().toISOString()
+        })
+        .eq("client_id", selectedClient.client_id);
+
+      if (clientErr) throw clientErr;
+
+      // 2. Log Callback activity
+      const { error: actErr } = await supabase
+        .from("customer_activities")
+        .insert({
+          client_id: selectedClient.client_id,
+          employee_id: user?.id,
+          activity_type: "Callback",
+          notes: `[Reminder] Scheduled follow-up callback. Notes: ${followupNotes}`,
+          status: "PENDING",
+          scheduled_time: scheduledTime
+        });
+
+      if (actErr) throw actErr;
+
+      setFollowupDialogOpen(false);
+      setFollowupDate("");
+      setFollowupNotes("");
+
+      await refreshSelectedClient(selectedClient.client_id);
+      await loadData();
+      alert("Follow-up callback scheduled.");
+    } catch (err: any) {
+      alert(err.message || "Failed to schedule follow-up.");
+    }
+  };
+
+  const handleRequestVisit = async () => {
+    if (!selectedClient) return;
+    if (!visitWorkerId || !visitInstructions) {
+      alert("Please assign a worker and enter visit instructions.");
+      return;
+    }
+    try {
+      // 1. Update client status, stage, worker
+      const { error: clientErr } = await supabase
+        .from("clients")
+        .update({
+          assigned_worker: visitWorkerId,
+          current_stage: "Field Visit",
+          progress_percentage: 75,
+          stage_updated_at: new Date().toISOString()
+        })
+        .eq("client_id", selectedClient.client_id);
+
+      if (clientErr) throw clientErr;
+
+      // 2. Create task for the worker
+      const { error: taskErr } = await supabase
+        .from("tasks")
+        .insert({
+          client_id: selectedClient.client_id,
+          assigned_worker_id: visitWorkerId,
+          title: "Field Visit Request",
+          description: visitInstructions,
+          status: "PENDING",
+          due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        });
+
+      if (taskErr) throw taskErr;
+
+      // 3. Log Activity
+      const { error: actErr } = await supabase
+        .from("customer_activities")
+        .insert({
+          client_id: selectedClient.client_id,
+          employee_id: user?.id,
+          activity_type: "Field Visit",
+          outcome: "Field Visit Assigned",
+          notes: `[Field Visit Requested] Instructions: ${visitInstructions}`
+        });
+
+      if (actErr) throw actErr;
+
+      setVisitRequestDialogOpen(false);
+      setVisitInstructions("");
+      setVisitWorkerId("");
+
+      await refreshSelectedClient(selectedClient.client_id);
+      await loadData();
+      alert("Field Visit requested and worker assigned.");
+    } catch (err: any) {
+      alert(err.message || "Failed to request field visit.");
+    }
+  };
+
+  const handleEscalateCase = async () => {
+    if (!selectedClient) return;
+    if (!escalationNotes) {
+      alert("Please enter escalation notes.");
+      return;
+    }
+    try {
+      // 1. Log activity
+      const { error: actErr } = await supabase
+        .from("customer_activities")
+        .insert({
+          client_id: selectedClient.client_id,
+          employee_id: user?.id,
+          activity_type: "Escalation",
+          outcome: "Case Escalated",
+          notes: `[Escalated] ${escalationNotes}`
+        });
+
+      if (actErr) throw actErr;
+
+      // 2. Update client
+      const { error: clientErr } = await supabase
+        .from("clients")
+        .update({
+          status: "REVIEW",
+          stage_updated_at: new Date().toISOString()
+        })
+        .eq("client_id", selectedClient.client_id);
+
+      if (clientErr) throw clientErr;
+
+      setEscalateDialogOpen(false);
+      setEscalationNotes("");
+
+      await refreshSelectedClient(selectedClient.client_id);
+      await loadData();
+      alert("Case escalated.");
+    } catch (err: any) {
+      alert(err.message || "Failed to escalate case.");
+    }
+  };
+
+  const handleMarkCollectionReceived = async () => {
+    if (!selectedClient) return;
+    const amount = parseFloat(collectedAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid positive collected amount.");
+      return;
+    }
+    try {
+      const currentOutstanding = selectedClient.outstanding_amount || 0;
+      const currentCollections = parseFloat(selectedClient.total_collections) || 0;
+      const newOutstanding = Math.max(0, currentOutstanding - amount);
+      const newCollections = currentCollections + amount;
+      const newStage = newOutstanding <= 0 ? "Closed" : "Payment Received";
+      const newProgress = newOutstanding <= 0 ? 100 : 90;
+      const newStatus = newOutstanding <= 0 ? "COMPLETED" : "FOLLOW_UP";
+
+      // 1. Update client
+      const { error: clientErr } = await supabase
+        .from("clients")
+        .update({
+          outstanding_amount: newOutstanding,
+          total_collections: newCollections,
+          current_stage: newStage,
+          progress_percentage: newProgress,
+          status: newStatus,
+          last_follow_up_date: new Date().toISOString(),
+          stage_updated_at: new Date().toISOString()
+        })
+        .eq("client_id", selectedClient.client_id);
+
+      if (clientErr) throw clientErr;
+
+      // 2. Log Payment Activity
+      const { error: actErr } = await supabase
+        .from("customer_activities")
+        .insert({
+          client_id: selectedClient.client_id,
+          employee_id: user?.id,
+          activity_type: "Payment",
+          outcome: "Payment Collected",
+          notes: `[Payment Received] Amount: ₹${amount} collected via ${collectionMode}. Outstanding Balance is now: ₹${newOutstanding}.`
+        });
+
+      if (actErr) throw actErr;
+
+      setCollectionDialogOpen(false);
+      setCollectedAmount("");
+
+      await refreshSelectedClient(selectedClient.client_id);
+      await loadData();
+      alert("Collection received and customer records updated.");
+    } catch (err: any) {
+      alert(err.message || "Failed to record payment collection.");
     }
   };
 
@@ -1084,50 +1387,136 @@ export const Clients: React.FC = () => {
               Navigate to Customer
             </Button>
 
-            {/* Workflow Progress Stepper */}
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-              <Clock size={18} /> Workflow Stage Timeline
-            </Typography>
-            <Stepper
-              orientation="vertical"
-              activeStep={WORKFLOW_STAGES.indexOf(selectedClient.status)}
-              sx={{ mb: 4 }}
-            >
-              {WORKFLOW_STAGES.map((stage) => (
-                <Step key={stage}>
-                  <StepLabel
-                    onClick={() => updateWorkflowStage(stage)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: selectedClient.status === stage ? 700 : 400,
-                        color: selectedClient.status === stage ? "primary.main" : "text.primary"
-                      }}
-                    >
-                      {STAGE_LABELS[stage]}
+            {/* Client Progress Percentage */}
+            {(() => {
+              const currentStage = selectedClient.current_stage || (selectedClient.status === "COMPLETED" ? "Closed" : "New Lead");
+              const progressPercent = selectedClient.progress_percentage || STAGE_PROGRESS[currentStage] || 15;
+              const stageUpdatedAt = selectedClient.stage_updated_at || selectedClient.updated_at;
+              const daysInStage = stageUpdatedAt ? Math.max(0, Math.floor((new Date().getTime() - new Date(stageUpdatedAt).getTime()) / (1000 * 60 * 60 * 24))) : 0;
+
+              return (
+                <Box sx={{ mb: 4, p: 2, bgcolor: "rgba(99, 102, 241, 0.04)", borderRadius: "12px", border: "1px solid rgba(99, 102, 241, 0.12)" }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "text.primary" }}>
+                      Lifecycle Progress
                     </Typography>
-                  </StepLabel>
-                </Step>
-              ))}
-            </Stepper>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "primary.main" }}>
+                      {progressPercent}%
+                    </Typography>
+                  </Box>
+                  
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={progressPercent} 
+                    sx={{ 
+                      height: 10, 
+                      borderRadius: 5, 
+                      bgcolor: "rgba(0,0,0,0.06)", 
+                      "& .MuiLinearProgress-bar": {
+                        borderRadius: 5,
+                        background: "linear-gradient(90deg, #6366F1 0%, #45F3FF 100%)"
+                      },
+                      mb: 2
+                    }} 
+                  />
+
+                  <Box sx={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 1 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Current Stage</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800, color: "primary.main" }}>
+                        {currentStage}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: "right" }}>
+                      <Typography variant="caption" color="text.secondary">Time in Stage</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                        {daysInStage} {daysInStage === 1 ? "day" : "days"}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: "flex", gap: 1, overflowX: "auto", py: 1, mt: 2, "&::-webkit-scrollbar": { height: 4 } }}>
+                    {STAGE_LIST.map((stage) => {
+                      const isActive = currentStage === stage;
+                      return (
+                        <Chip
+                          key={stage}
+                          label={stage}
+                          size="small"
+                          color={isActive ? "primary" : "default"}
+                          variant={isActive ? "filled" : "outlined"}
+                          sx={{ 
+                            fontSize: "0.68rem", 
+                            fontWeight: isActive ? 700 : 400,
+                            cursor: "pointer"
+                          }}
+                          onClick={async () => {
+                            try {
+                              const p = STAGE_PROGRESS[stage] || 15;
+                              const { error } = await supabase
+                                .from("clients")
+                                .update({
+                                  current_stage: stage,
+                                  progress_percentage: p,
+                                  stage_updated_at: new Date().toISOString()
+                                })
+                                .eq("client_id", selectedClient.client_id);
+                              if (error) throw error;
+                              setSelectedClient((prev: any) => ({
+                                ...prev,
+                                current_stage: stage,
+                                progress_percentage: p,
+                                stage_updated_at: new Date().toISOString()
+                              }));
+                              loadData();
+                            } catch (err: any) {
+                              alert(err.message);
+                            }
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                </Box>
+              );
+            })()}
 
             <Divider sx={{ my: 3 }} />
 
             {/* Staff Assignment Actions */}
-            {(isOwner || isManager) && (
+            {(isOwner || isManager || user?.role === "TELECALLER") && (
               <Box sx={{ mb: 4 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
                   Assign Case Ownership
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={6}>
+                  {(isOwner || isManager) && (
+                    <Grid item xs={6}>
+                      <TextField
+                        select
+                        fullWidth
+                        size="small"
+                        label="Primary Telecaller"
+                        value={selectedClient.assigned_telecaller || ""}
+                        onChange={(e) => handleStaffAssignment("telecaller", e.target.value)}
+                      >
+                        <MenuItem value="">Unassigned</MenuItem>
+                        {staff
+                          .filter((s) => s.role === "telecaller")
+                          .map((t) => (
+                            <MenuItem key={t.user_id} value={t.user_id}>
+                              {t.full_name}
+                            </MenuItem>
+                          ))}
+                      </TextField>
+                    </Grid>
+                  )}
+                  <Grid item xs={isOwner || isManager ? 6 : 12}>
                     <TextField
                       select
                       fullWidth
                       size="small"
-                      label="Field Worker"
+                      label="Assigned Field Worker"
                       value={selectedClient.assigned_worker || ""}
                       onChange={(e) => handleStaffAssignment("worker", e.target.value)}
                     >
@@ -1141,26 +1530,230 @@ export const Clients: React.FC = () => {
                         ))}
                     </TextField>
                   </Grid>
-                  <Grid item xs={6}>
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      label="Manager"
-                      value={selectedClient.assigned_manager || ""}
-                      onChange={(e) => handleStaffAssignment("manager", e.target.value)}
-                    >
-                      <MenuItem value="">Unassigned</MenuItem>
-                      {staff
-                        .filter((s) => s.role === "manager")
-                        .map((m) => (
-                          <MenuItem key={m.user_id} value={m.user_id}>
-                            {m.full_name}
-                          </MenuItem>
-                        ))}
-                    </TextField>
-                  </Grid>
                 </Grid>
+              </Box>
+            )}
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Case Ownership Details Panel */}
+            {(() => {
+              const telecallerName = selectedClient.telecaller?.full_name || "Unassigned";
+              const telecallerEmpId = selectedClient.telecaller?.employees?.[0]?.employee_id || "N/A";
+              const telecallerPhone = selectedClient.telecaller?.phone || "N/A";
+              const tcActiveCases = clients.filter((c: any) => c.assigned_telecaller === selectedClient.assigned_telecaller).length;
+
+              const workerName = selectedClient.worker?.full_name || "Unassigned";
+              const workerEmpId = selectedClient.worker?.employees?.[0]?.employee_id || "N/A";
+              const workerLastVisit = selectedClient.last_visit_date ? new Date(selectedClient.last_visit_date).toLocaleDateString() : "No visits";
+              const workerTotalVisits = visits.length;
+
+              return (
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+                    Case Ownership Details
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {/* Primary Telecaller Card */}
+                    <Grid item xs={12} sm={6}>
+                      <Card variant="outlined" sx={{ p: 2, height: "100%", bgcolor: "rgba(0, 0, 0, 0.02)" }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "primary.main", mb: 1 }}>
+                          Primary Telecaller
+                        </Typography>
+                        <Stack spacing={0.5}>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>{telecallerName}</Typography>
+                          <Typography variant="caption" color="text.secondary">Emp ID: {telecallerEmpId}</Typography>
+                          <Typography variant="caption" color="text.secondary">Phone: {telecallerPhone}</Typography>
+                          <Typography variant="caption" color="text.secondary">Active Cases: {tcActiveCases}</Typography>
+                          <Typography variant="caption" color="text.secondary">Rating: 4.8 / 5.0 ⭐</Typography>
+                        </Stack>
+                      </Card>
+                    </Grid>
+
+                    {/* Assigned Field Worker Card */}
+                    <Grid item xs={12} sm={6}>
+                      <Card variant="outlined" sx={{ p: 2, height: "100%", bgcolor: "rgba(0, 0, 0, 0.02)" }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "primary.main", mb: 1 }}>
+                          Field Worker
+                        </Typography>
+                        <Stack spacing={0.5}>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>{workerName}</Typography>
+                          <Typography variant="caption" color="text.secondary">Emp ID: {workerEmpId}</Typography>
+                          <Typography variant="caption" color="text.secondary">Total Visits: {workerTotalVisits}</Typography>
+                          <Typography variant="caption" color="text.secondary">Last Visit: {workerLastVisit}</Typography>
+                        </Stack>
+                      </Card>
+                    </Grid>
+                  </Grid>
+                </Box>
+              );
+            })()}
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Telecaller Command Center */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+                Telecaller Command Center
+              </Typography>
+              <Grid container spacing={1.5}>
+                <Grid item xs={6}>
+                  <Button 
+                    fullWidth 
+                    variant="contained" 
+                    size="small" 
+                    sx={{ bgcolor: "#000", color: "#fff", "&:hover": { bgcolor: "#222" } }}
+                    onClick={() => {
+                      if (selectedClient.assigned_worker) {
+                        setVisitWorkerId(selectedClient.assigned_worker);
+                      }
+                      setVisitRequestDialogOpen(true);
+                    }}
+                  >
+                    Request Field Visit
+                  </Button>
+                </Grid>
+                <Grid item xs={6}>
+                  <Button 
+                    fullWidth 
+                    variant="contained" 
+                    size="small" 
+                    sx={{ bgcolor: "#000", color: "#fff", "&:hover": { bgcolor: "#222" } }}
+                    onClick={() => setPtpDialogOpen(true)}
+                  >
+                    Create PTP
+                  </Button>
+                </Grid>
+                <Grid item xs={6}>
+                  <Button 
+                    fullWidth 
+                    variant="contained" 
+                    size="small" 
+                    sx={{ bgcolor: "#000", color: "#fff", "&:hover": { bgcolor: "#222" } }}
+                    onClick={() => setFollowupDialogOpen(true)}
+                  >
+                    Schedule Follow-Up
+                  </Button>
+                </Grid>
+                <Grid item xs={6}>
+                  <Button 
+                    fullWidth 
+                    variant="contained" 
+                    size="small" 
+                    sx={{ bgcolor: "#000", color: "#fff", "&:hover": { bgcolor: "#222" } }}
+                    onClick={() => setCollectionDialogOpen(true)}
+                  >
+                    Mark Collection Received
+                  </Button>
+                </Grid>
+                <Grid item xs={6}>
+                  <Button 
+                    fullWidth 
+                    variant="outlined" 
+                    size="small" 
+                    color="error"
+                    onClick={() => setEscalateDialogOpen(true)}
+                  >
+                    Escalate Case
+                  </Button>
+                </Grid>
+                <Grid item xs={6}>
+                  <Button 
+                    fullWidth 
+                    variant="outlined" 
+                    size="small" 
+                    onClick={() => {
+                      const noteTextarea = document.getElementById("timeline-notes-input");
+                      if (noteTextarea) {
+                        noteTextarea.focus();
+                      }
+                    }}
+                  >
+                    Add Activity Note
+                  </Button>
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Field Worker Progress & Geo Verification Panel */}
+            {selectedClient.assigned_worker && (
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+                  Field Worker Progress Tracking
+                </Typography>
+                {(() => {
+                  const workerName = selectedClient.worker?.full_name || "Unassigned";
+                  const casesAssigned = clients.filter((c: any) => c.assigned_worker === selectedClient.assigned_worker).length;
+                  const visitsCompleted = visits.filter((v: any) => v.check_out_time !== null).length;
+                  const visitsPending = Math.max(0, casesAssigned - visitsCompleted);
+
+                  return (
+                    <Box sx={{ mb: 2, p: 2, bgcolor: "rgba(0, 0, 0, 0.02)", borderRadius: "8px", border: "1px solid rgba(0, 0, 0, 0.05)" }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                        Status of {workerName}
+                      </Typography>
+                      <Grid container spacing={1.5} sx={{ mb: 2 }}>
+                        <Grid item xs={4}>
+                          <Typography variant="caption" color="text.secondary">Cases Assigned</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>{casesAssigned}</Typography>
+                        </Grid>
+                        <Grid item xs={4}>
+                          <Typography variant="caption" color="text.secondary">Completed Visits</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: "success.main" }}>{visitsCompleted}</Typography>
+                        </Grid>
+                        <Grid item xs={4}>
+                          <Typography variant="caption" color="text.secondary">Pending Visits</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: "warning.main" }}>{visitsPending}</Typography>
+                        </Grid>
+                      </Grid>
+
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                        Visit Geo Verifications
+                      </Typography>
+                      {visits.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary">No visit records logged for this case.</Typography>
+                      ) : (
+                        <Stack spacing={1.5}>
+                          {visits.map((v: any) => {
+                            const isGpsVerified = v.check_in_lat && v.check_in_lng && selectedClient.latitude && selectedClient.longitude &&
+                              getDistanceMeters(parseFloat(v.check_in_lat), parseFloat(v.check_in_lng), selectedClient.latitude, selectedClient.longitude) <= 200;
+
+                            return (
+                              <Box key={v.visit_id} sx={{ p: 1, border: "1px solid", borderColor: "divider", borderRadius: "6px", bgcolor: "#fff" }}>
+                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                    {new Date(v.check_in_time).toLocaleDateString()}
+                                  </Typography>
+                                  <Chip 
+                                    label={isGpsVerified ? "GPS Verified" : "Verification Failed"}
+                                    size="small"
+                                    color={isGpsVerified ? "success" : "error"}
+                                    variant="outlined"
+                                    sx={{ fontSize: "0.65rem", height: 18 }}
+                                  />
+                                </Box>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  Check-In: {new Date(v.check_in_time).toLocaleTimeString()} 
+                                  {v.check_out_time ? ` | Check-Out: ${new Date(v.check_out_time).toLocaleTimeString()}` : " (Active Now)"}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  Coordinates: {parseFloat(v.check_in_lat || 0).toFixed(4)}, {parseFloat(v.check_in_lng || 0).toFixed(4)}
+                                </Typography>
+                                {v.outcome && (
+                                  <Typography variant="caption" color="primary.main" sx={{ fontWeight: 700 }} display="block">
+                                    Outcome: {v.outcome}
+                                  </Typography>
+                                )}
+                              </Box>
+                            );
+                          })}
+                        </Stack>
+                      )}
+                    </Box>
+                  );
+                })()}
               </Box>
             )}
 
@@ -1732,6 +2325,164 @@ export const Clients: React.FC = () => {
           </Box>
         )}
       </Drawer>
+
+      {/* PTP Dialog */}
+      <Dialog open={ptpDialogOpen} onClose={() => setPtpDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Create Promise To Pay (PTP)</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="PTP Amount (₹)"
+              type="number"
+              fullWidth
+              value={ptpAmount}
+              onChange={(e) => setPtpAmount(e.target.value)}
+            />
+            <TextField
+              label="Promise Date"
+              type="date"
+              fullWidth
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={ptpDate}
+              onChange={(e) => setPtpDate(e.target.value)}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPtpDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" sx={{ bgcolor: "#000", color: "#fff", "&:hover": { bgcolor: "#222" } }} onClick={handleCreatePTP}>
+            Save PTP
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Schedule Follow-up Dialog */}
+      <Dialog open={followupDialogOpen} onClose={() => setFollowupDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Schedule Callback Follow-Up</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Follow-Up Date & Time"
+              type="datetime-local"
+              fullWidth
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={followupDate}
+              onChange={(e) => setFollowupDate(e.target.value)}
+            />
+            <TextField
+              label="Follow-Up Notes"
+              multiline
+              rows={3}
+              fullWidth
+              value={followupNotes}
+              onChange={(e) => setFollowupNotes(e.target.value)}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFollowupDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" sx={{ bgcolor: "#000", color: "#fff", "&:hover": { bgcolor: "#222" } }} onClick={handleScheduleFollowup}>
+            Schedule Callback
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Request Visit Dialog */}
+      <Dialog open={visitRequestDialogOpen} onClose={() => setVisitRequestDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Assign & Request Field Visit</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              select
+              label="Field Worker"
+              fullWidth
+              value={visitWorkerId}
+              onChange={(e) => setVisitWorkerId(e.target.value)}
+            >
+              <MenuItem value="">Unassigned</MenuItem>
+              {staff
+                .filter((s) => s.role === "worker")
+                .map((w) => (
+                  <MenuItem key={w.user_id} value={w.user_id}>
+                    {w.full_name}
+                  </MenuItem>
+                ))}
+            </TextField>
+            <TextField
+              label="Visit Instructions / Details"
+              multiline
+              rows={3}
+              fullWidth
+              value={visitInstructions}
+              onChange={(e) => setVisitInstructions(e.target.value)}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setVisitRequestDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" sx={{ bgcolor: "#000", color: "#fff", "&:hover": { bgcolor: "#222" } }} onClick={handleRequestVisit}>
+            Request Visit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Escalate Case Dialog */}
+      <Dialog open={escalateDialogOpen} onClose={() => setEscalateDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Escalate Case to Owner/Manager</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Reason for Escalation"
+              multiline
+              rows={4}
+              fullWidth
+              placeholder="Describe why this customer file requires escalation..."
+              value={escalationNotes}
+              onChange={(e) => setEscalationNotes(e.target.value)}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEscalateDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleEscalateCase}>
+            Escalate Case
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Mark Collection Received Dialog */}
+      <Dialog open={collectionDialogOpen} onClose={() => setCollectionDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Record Payment Collection</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Collected Amount (₹)"
+              type="number"
+              fullWidth
+              value={collectedAmount}
+              onChange={(e) => setCollectedAmount(e.target.value)}
+            />
+            <TextField
+              select
+              label="Payment Mode"
+              fullWidth
+              value={collectionMode}
+              onChange={(e) => setCollectionMode(e.target.value)}
+            >
+              <MenuItem value="UPI">UPI (GPay / PhonePe / Paytm)</MenuItem>
+              <MenuItem value="Cash">Cash Handover</MenuItem>
+              <MenuItem value="Card">Debit / Credit Card</MenuItem>
+              <MenuItem value="Net Banking">Net Banking Transfer</MenuItem>
+            </TextField>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCollectionDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" sx={{ bgcolor: "#000", color: "#fff", "&:hover": { bgcolor: "#222" } }} onClick={handleMarkCollectionReceived}>
+            Record Payment
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
