@@ -49,7 +49,7 @@ import {
 import { Link } from "react-router-dom";
 
 export const Dashboard: React.FC = () => {
-  const { user, isOwner, isManager, isTelecaller, isWorker } = useAuth();
+  const { user, isOwner, isManager, isTelecaller, isWorker, isClientManager } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,6 +65,9 @@ export const Dashboard: React.FC = () => {
         setData(res);
       } else if (isWorker) {
         const res = await loadWorkerDashboardData(user.id);
+        setData(res);
+      } else if (isClientManager) {
+        const res = await loadClientManagerDashboardData(user.id);
         setData(res);
       }
     } catch (err) {
@@ -870,5 +873,424 @@ export const Dashboard: React.FC = () => {
     );
   };
 
-  return (isOwner || isManager) ? renderOwnerDashboard() : isTelecaller ? renderTelecallerDashboard() : renderWorkerDashboard();
-};
+  const renderClientManagerDashboard = () => {
+    if (!data) return null;
+    const { stats, recentActivities, employeeActivity, priorityBreakdown, statusBreakdown } = data;
+    const COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
+
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {/* Welcome Section */}
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 800 }}>
+            Client Portfolio Dashboard
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Performance analytics, tracking, and recovery status for your assigned accounts.
+          </Typography>
+        </Box>
+
+        {/* Stats Grid */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 1 }}>
+              <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Avatar sx={{ bgcolor: "primary.main", width: 44, height: 44 }}>
+                  <Briefcase size={22} />
+                </Avatar>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Assigned Accounts</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800 }}>{stats.assignedClients}</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 1 }}>
+              <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Avatar sx={{ bgcolor: "success.main", width: 44, height: 44 }}>
+                  <CheckCircle size={22} />
+                </Avatar>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Closed Cases</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800 }}>{stats.closedCases}</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 1 }}>
+              <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Avatar sx={{ bgcolor: "warning.main", width: 44, height: 44 }}>
+                  <Clock size={22} />
+                </Avatar>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Recovery Rate</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800 }}>{stats.recoveryRate}%</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ p: 1 }}>
+              <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Avatar sx={{ bgcolor: "info.main", width: 44, height: 44 }}>
+                  <TrendingUp size={22} />
+                </Avatar>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Total Operations</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800 }}>{stats.callsCompleted + stats.fieldVisits}</Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Charts Section */}
+        <Grid container spacing={3.5}>
+          {/* Recovery Trends / Priority Breakdown */}
+          <Grid item xs={12} md={6}>
+            <Card sx={{ p: 1, height: "100%" }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+                  Priority Case Distribution
+                </Typography>
+                <Box sx={{ width: "100%", height: 260 }}>
+                  {priorityBreakdown.length > 0 ? (
+                    <ResponsiveContainer>
+                      <BarChart data={priorityBreakdown}>
+                        <XAxis dataKey="name" stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={45} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+                      <Typography variant="body2" color="text.secondary">No priority data found</Typography>
+                    </Box>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Case Status Distribution */}
+          <Grid item xs={12} md={6}>
+            <Card sx={{ p: 1, height: "100%" }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+                  Case Status Breakdown
+                </Typography>
+                <Box sx={{ width: "100%", height: 220, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  {statusBreakdown.length > 0 ? (
+                    <ResponsiveContainer>
+                      <PieChart>
+                        <Pie
+                          data={statusBreakdown}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={4}
+                          dataKey="value"
+                        >
+                          {statusBreakdown.map((_: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">No status data found</Typography>
+                  )}
+                </Box>
+                {/* Custom Legends */}
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1, justifyContent: "center" }}>
+                  {statusBreakdown.map((item: any, idx: number) => (
+                    <Chip
+                      key={item.name}
+                      label={`${item.name}: ${item.value}`}
+                      size="small"
+                      sx={{ bgcolor: `${COLORS[idx % COLORS.length]}20`, color: COLORS[idx % COLORS.length], border: `1px solid ${COLORS[idx % COLORS.length]}50` }}
+                    />
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Team Activity and Recent Interactions */}
+        <Grid container spacing={3.5}>
+          {/* Staff Performance Summary Table */}
+          <Grid item xs={12} md={7}>
+            <Card sx={{ p: 1, height: "100%" }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                  Assigned Team Performance
+                </Typography>
+                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 320, overflowY: "auto" }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: "#F8F8F8" }}>
+                        <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Emp. ID</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} align="center">Calls Made</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} align="center">Field Visits</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {employeeActivity.length > 0 ? (
+                        employeeActivity.map((emp: any) => (
+                          <TableRow key={emp.id} hover>
+                            <TableCell>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Avatar sx={{ width: 28, height: 28, fontSize: "0.8rem", bgcolor: "#111827", color: "#fff" }}>
+                                  {emp.name.charAt(0)}
+                                </Avatar>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>{emp.name}</Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Chip label={emp.role} size="small" variant="outlined" sx={{ textTransform: "capitalize", fontSize: "10px" }} />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="caption" color="text.secondary">{emp.employeeId}</Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: emp.callsCount > 0 ? "success.main" : "text.secondary" }}>
+                                {emp.callsCount}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: emp.visitsCount > 0 ? "primary.main" : "text.secondary" }}>
+                                {emp.visitsCount}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center">
+                            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                              No staff activity logged on your cases yet.
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Recent Activity Feed */}
+          <Grid item xs={12} md={5}>
+            <Card sx={{ p: 1, height: "100%" }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2.5 }}>
+                  Recent Portfolio Interactions
+                </Typography>
+                <List sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {recentActivities.map((act: any) => (
+                    <Box key={act.id}>
+                      <Box sx={{ display: "flex", gap: 2 }}>
+                        <Avatar sx={{ bgcolor: "divider", color: "text.primary", width: 28, height: 28, fontSize: "0.8rem" }}>
+                          {act.user.name.charAt(0)}
+                        </Avatar>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, display: "inline-block", mr: 1 }}>
+                            {act.user.name}
+                          </Typography>
+                          <Chip label={act.user.role} size="small" sx={{ fontSize: "9px", height: "16px" }} />
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                            {act.details} for <strong>{act.lead.customerName}</strong>
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(act.timestamp).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))}
+                  {recentActivities.length === 0 && (
+                    <Typography variant="body2" color="text.secondary">
+                      No interactions recorded on your cases.
+                    </Typography>
+                  )}
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  };
+
+  const loadClientManagerDashboardData = async (userId: string) => {
+    // 1. Fetch active clients where client_manager_id = userId
+    const { data: clients, error: clientsErr } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("client_manager_id", userId)
+      .eq("is_archived", false);
+
+    if (clientsErr) throw clientsErr;
+
+    const clientIds = (clients || []).map(c => c.client_id);
+    let activities: any[] = [];
+    if (clientIds.length > 0) {
+      const { data: actData, error: actErr } = await supabase
+        .from("customer_activities")
+        .select(`
+          activity_id,
+          activity_type,
+          call_result,
+          outcome,
+          notes,
+          callback_time,
+          status,
+          created_at,
+          created_by,
+          creator:users!customer_activities_created_by_fkey(full_name, role),
+          clients!inner(customer_name)
+        `)
+        .in("client_id", clientIds)
+        .order("created_at", { ascending: false });
+
+      if (actErr) throw actErr;
+      activities = actData || [];
+    }
+
+    // 2. Fetch users who have performed activities on these cases to track team performance
+    const uniqueWorkerIds = Array.from(new Set(activities.map(a => a.created_by).filter(Boolean)));
+    let staffUsers: any[] = [];
+    if (uniqueWorkerIds.length > 0) {
+      const { data: usersList, error: usersErr } = await supabase
+        .from("users")
+        .select(`
+          user_id,
+          full_name,
+          role,
+          employees (employee_id)
+        `)
+        .in("user_id", uniqueWorkerIds);
+
+      if (!usersErr && usersList) {
+        staffUsers = usersList;
+      }
+    }
+
+    // Calculate metrics
+    const callsCompleted = activities.filter(a => a.activity_type.includes("Call") && a.status !== "PENDING").length;
+    const fieldVisits = activities.filter(
+      a =>
+        (a.activity_type === "Field Visit" ||
+          a.activity_type === "Customer Meeting" ||
+          a.activity_type === "Address Verification") &&
+        a.status !== "PENDING"
+    ).length;
+    const closedCases = (clients || []).filter(c => c.status === "COMPLETED").length;
+    
+    // Recovery rate (closed / total)
+    const recoveryRate = clients?.length ? Math.round((closedCases / clients.length) * 100) : 0;
+
+    const stats = {
+      assignedClients: clients?.length || 0,
+      callsCompleted,
+      fieldVisits,
+      closedCases,
+      recoveryRate
+    };
+
+    // Employee Activity Summary calculation
+    const employeeActivity: any[] = [];
+    staffUsers.forEach((u) => {
+      const empId = u.employees?.[0]?.employee_id || "N/A";
+      const uCalls = activities.filter(
+        a => a.created_by === u.user_id && a.activity_type.includes("Call") && a.status !== "PENDING"
+      ).length;
+      const uVisits = activities.filter(
+        a =>
+          a.created_by === u.user_id &&
+          (a.activity_type === "Field Visit" ||
+            a.activity_type === "Customer Meeting" ||
+            a.activity_type === "Address Verification") &&
+          a.status !== "PENDING"
+      ).length;
+
+      employeeActivity.push({
+        id: u.user_id,
+        name: u.full_name,
+        role: u.role,
+        employeeId: empId,
+        callsCount: uCalls,
+        visitsCount: uVisits
+      });
+    });
+
+    // Recent activities (limit 5)
+    const recentActivities = activities.slice(0, 5).map((act: any) => ({
+      id: act.activity_id,
+      user: {
+        name: act.creator?.full_name || "System",
+        role: act.creator?.role || "SYSTEM"
+      },
+      details: `${act.activity_type} - ${act.notes || ""}`,
+      lead: {
+        customerName: act.clients?.customer_name || act.client_name || "Unknown"
+      },
+      timestamp: act.created_at
+    }));
+
+    // Status breakdown for Pie Chart
+    const statusTypes = Array.from(new Set((clients || []).map(c => c.status || "NEW_LEAD")));
+    const statusBreakdown = statusTypes.map(st => {
+      const count = (clients || []).filter(c => (c.status || "NEW_LEAD") === st).length;
+      return {
+        name: st,
+        value: count
+      };
+    });
+
+    // Priority breakdown for Bar Chart
+    const priorityTypes = Array.from(new Set((clients || []).map(c => c.priority || "Normal")));
+    const priorityBreakdown = priorityTypes.map(p => {
+      const count = (clients || []).filter(c => (c.priority || "Normal") === p).length;
+      return {
+        name: p,
+        value: count
+      };
+    });
+
+    return {
+      stats,
+      recentActivities,
+      employeeActivity,
+      priorityBreakdown,
+      statusBreakdown
+    };
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "80vh" }}>
+        <CircularProgress color="inherit" />
+      </Box>
+    );
+  }
+
+  return (isOwner || isManager)
+    ? renderOwnerDashboard()
+    : isTelecaller
+    ? renderTelecallerDashboard()
+    : isWorker
+    ? renderWorkerDashboard()
+    : isClientManager
+    ? renderClientManagerDashboard()
+    : null;
+  };

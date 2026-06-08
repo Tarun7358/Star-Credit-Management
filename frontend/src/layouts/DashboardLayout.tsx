@@ -41,7 +41,7 @@ import {
 const DRAWER_WIDTH = 260;
 
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, logout, isOwner, isManager, isWorker } = useAuth();
+  const { user, logout, isOwner, isManager, isWorker, isClientManager } = useAuth();
   const { mode, toggleTheme } = useThemeContext();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -70,10 +70,10 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   // Define navigation items based on user role
   const menuItems = [
     { text: "Dashboard", path: "/", icon: <LayoutDashboard size={20} />, visible: true },
-    { text: "Clients Management", path: "/clients", icon: <FileSpreadsheet size={20} />, visible: isOwner || isManager },
+    { text: "Clients Management", path: "/clients", icon: <FileSpreadsheet size={20} />, visible: isOwner || isManager || isClientManager },
     { text: "My Assigned Cases", path: "/clients", icon: <FileText size={20} />, visible: isWorker },
     { text: "Employees Directory", path: "/employees", icon: <Users size={20} />, visible: isOwner },
-    { text: "Reports & Analytics", path: "/reports", icon: <TrendingUp size={20} />, visible: isOwner || isManager },
+    { text: "Reports & Analytics", path: "/reports", icon: <TrendingUp size={20} />, visible: isOwner || isManager || isClientManager },
     { text: "Field Visits Map", path: "/visits-live", icon: <MapPin size={20} />, visible: isOwner || isManager },
     { text: "Visit History Logs", path: "/visits-history", icon: <History size={20} />, visible: isOwner || isManager },
     { text: "Profile Settings", path: "/settings", icon: <SettingsIcon size={20} />, visible: true },

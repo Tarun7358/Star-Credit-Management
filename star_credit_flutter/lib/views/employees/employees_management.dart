@@ -69,7 +69,7 @@ class _EmployeesManagementPageState extends State<EmployeesManagementPage> {
         children: [
           Text(
             'Active Agency Staff',
-            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -112,7 +112,7 @@ class _EmployeesManagementPageState extends State<EmployeesManagementPage> {
         children: [
           Text(
             'Pending Approval Requests',
-            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -135,7 +135,7 @@ class _EmployeesManagementPageState extends State<EmployeesManagementPage> {
                           children: [
                             Text(
                               req['full_name'] ?? 'Candidate',
-                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                             ),
                             Text(
                               (req['role'] ?? 'Worker').toString().toUpperCase(),
@@ -197,7 +197,7 @@ class _EmployeesManagementPageState extends State<EmployeesManagementPage> {
         // Title
         Text(
           'Agency Staff Control Board',
-          style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+          style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
         ),
         Text(
           'Approve or deny registrations and review staff members roles settings.',

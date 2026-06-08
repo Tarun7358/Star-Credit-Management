@@ -1,14 +1,25 @@
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class BiometricService {
   final LocalAuthentication _auth = LocalAuthentication();
-  bool _isSettingsEnabled = false; // Toggle state stored locally
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  
+  static const _channel = MethodChannel('com.starcreditmanagement.app/settings');
+  
+  bool _isSettingsEnabled = false; // Toggle state loaded from shared preferences/secure storage
 
   bool get isSettingsEnabled => _isSettingsEnabled;
 
-  void toggleSettings(bool value) {
-    _isSettingsEnabled = value;
+  BiometricService() {
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isSettingsEnabled = prefs.getBool(_keyEnabled) ?? false;
   }
 
   /// Checks if device supports biometric hardware
@@ -19,6 +30,26 @@ class BiometricService {
       return canAuthenticateWithBiometrics && isDeviceSupported;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// Checks if biometrics are enrolled on the device
+  Future<bool> get isEnrolled async {
+    try {
+      if (!await canCheckBiometrics) return false;
+      final List<BiometricType> availableBiometrics = await _auth.getAvailableBiometrics();
+      return availableBiometrics.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Opens native Android security settings so user can enroll biometrics
+  Future<void> openSecuritySettings() async {
+    try {
+      await _channel.invokeMethod('openSecuritySettings');
+    } on PlatformException catch (e) {
+      print("Failed to open security settings: '${e.message}'.");
     }
   }
 
@@ -39,31 +70,35 @@ class BiometricService {
     }
   }
 
-  // Credentials management for passkey-style biometric login
+  // Credentials management for passkey-style biometric login using secure storage
   static const String _keyEmail = 'biometric_email';
   static const String _keyPassword = 'biometric_password';
   static const String _keyEnabled = 'biometric_enabled';
 
   Future<bool> hasSavedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString(_keyEmail);
-    final password = prefs.getString(_keyPassword);
     final enabled = prefs.getBool(_keyEnabled) ?? false;
-    return enabled && email != null && email.isNotEmpty && password != null && password.isNotEmpty;
+    if (!enabled) return false;
+    
+    final email = await _secureStorage.read(key: _keyEmail);
+    final password = await _secureStorage.read(key: _keyPassword);
+    return email != null && email.isNotEmpty && password != null && password.isNotEmpty;
   }
 
   Future<void> saveCredentials(String email, String password) async {
+    // Save settings switch in SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyEmail, email);
-    await prefs.setString(_keyPassword, password);
     await prefs.setBool(_keyEnabled, true);
     _isSettingsEnabled = true;
+
+    // Save actual credentials in FlutterSecureStorage
+    await _secureStorage.write(key: _keyEmail, value: email);
+    await _secureStorage.write(key: _keyPassword, value: password);
   }
 
   Future<Map<String, String>?> getSavedCredentials() async {
-    final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString(_keyEmail);
-    final password = prefs.getString(_keyPassword);
+    final email = await _secureStorage.read(key: _keyEmail);
+    final password = await _secureStorage.read(key: _keyPassword);
     if (email != null && password != null) {
       return {'email': email, 'password': password};
     }
@@ -72,9 +107,11 @@ class BiometricService {
 
   Future<void> clearSavedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyEmail);
-    await prefs.remove(_keyPassword);
     await prefs.setBool(_keyEnabled, false);
     _isSettingsEnabled = false;
+
+    // Delete credentials from FlutterSecureStorage
+    await _secureStorage.delete(key: _keyEmail);
+    await _secureStorage.delete(key: _keyPassword);
   }
 }

@@ -81,7 +81,7 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 export const Clients: React.FC = () => {
-  const { isOwner, isManager, isWorker, user } = useAuth();
+  const { isOwner, isManager, isWorker, isClientManager, user } = useAuth();
   const [clients, setClients] = useState<any[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,6 +98,7 @@ export const Clients: React.FC = () => {
   const [sensitiveDetails, setSensitiveDetails] = useState<any>(null);
   const [disputes, setDisputes] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [timeline, setTimeline] = useState<any[]>([]);
 
   // GPS Verification state
   const [gpsStatus, setGpsStatus] = useState<"idle" | "checking" | "verified" | "too_far" | "no_coords" | "denied">("idle");
@@ -245,17 +246,92 @@ export const Clients: React.FC = () => {
     loadData();
   }, []);
 
+  const loadClientActivitiesAndVisits = async (clientId: string) => {
+    try {
+      const { data: activityData } = await supabase
+        .from("customer_activities")
+        .select(`
+          *,
+          creator:users!customer_activities_created_by_fkey(full_name, role)
+        `)
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false });
+
+      const acts = activityData || [];
+      setActivities(acts);
+
+      const { data: visitData } = await supabase
+        .from("customer_visits")
+        .select(`
+          *,
+          worker:users!customer_visits_worker_id_fkey(full_name)
+        `)
+        .eq("client_id", clientId)
+        .order("check_in_time", { ascending: false });
+
+      const visits = visitData || [];
+
+      const combinedTimeline: any[] = [];
+      
+      acts.forEach((a: any) => {
+        combinedTimeline.push({
+          id: a.activity_id,
+          type: "activity",
+          activity_type: a.activity_type,
+          call_result: a.call_result,
+          outcome: a.outcome,
+          notes: a.notes,
+          timestamp: a.created_at,
+          gps_verified: a.gps_verified,
+          distance_from_customer: a.distance_from_customer,
+          creator_name: a.creator?.full_name || "System",
+          creator_role: a.creator?.role || "Staff",
+          status: a.status
+        });
+      });
+
+      visits.forEach((v: any) => {
+        combinedTimeline.push({
+          id: v.visit_id,
+          type: "visit",
+          activity_type: "Field Visit Check-In",
+          call_result: v.check_out_time ? "Check-Out Logged" : "Active Check-In",
+          outcome: v.outcome || "Pending Verification",
+          notes: v.notes || "Field visit check-in logged.",
+          timestamp: v.check_in_time,
+          gps_verified: v.gps_verified,
+          distance_from_customer: v.distance_from_customer,
+          creator_name: v.worker?.full_name || "Field Agent",
+          creator_role: "worker",
+          status: "RECORDED",
+          check_out_time: v.check_out_time,
+          duration_seconds: v.duration_seconds,
+          photo_url: v.photo_url,
+          signature_url: v.signature_url,
+          receipt_url: v.receipt_url,
+          document_url: v.document_url
+        });
+      });
+
+      combinedTimeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setTimeline(combinedTimeline);
+    } catch (err) {
+      console.error("Error loading activities/visits:", err);
+    }
+  };
+
   // Fetch detailed data on selecting client
   const handleClientSelect = async (client: any) => {
     setSelectedClient(client);
     setSensitiveDetails(null);
     setDisputes([]);
     setActivities([]);
+    setTimeline([]);
     setDetailDrawerOpen(true);
 
     try {
       // 1. Fetch sensitive details (Only accessible if owner, manager, or self)
-      if (isOwner || isManager || user?.id === client.client_id) {
+      if (isOwner || isManager || isClientManager || user?.id === client.client_id) {
         const { data: sensData } = await supabase
           .from("client_sensitive_details")
           .select("*")
@@ -274,17 +350,8 @@ export const Clients: React.FC = () => {
 
       if (disputeData) setDisputes(disputeData);
 
-      // 3. Fetch customer activities
-      const { data: activityData } = await supabase
-        .from("customer_activities")
-        .select(`
-          *,
-          creator:users!customer_activities_created_by_fkey(full_name, role)
-        `)
-        .eq("client_id", client.client_id)
-        .order("created_at", { ascending: false });
-
-      if (activityData) setActivities(activityData);
+      // 3. Fetch customer activities and visits
+      await loadClientActivitiesAndVisits(client.client_id);
     } catch (err) {
       console.error("Error loading selected client details:", err);
     }
@@ -533,16 +600,7 @@ export const Clients: React.FC = () => {
       setWorkerGps(null);
 
       // Reload Activities
-      const { data: activityData } = await supabase
-        .from("customer_activities")
-        .select(`
-          *,
-          creator:users!customer_activities_created_by_fkey(full_name, role)
-        `)
-        .eq("client_id", selectedClient.client_id)
-        .order("created_at", { ascending: false });
-
-      if (activityData) setActivities(activityData);
+      await loadClientActivitiesAndVisits(selectedClient.client_id);
     } catch (err: any) {
       alert(err.message || "Failed to log activity.");
     }
@@ -1543,27 +1601,29 @@ export const Clients: React.FC = () => {
               <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
                 Interaction History & Logs
               </Typography>
-              {activities.filter(a => a.status !== "PENDING").length > 0 ? (
+              {timeline.length > 0 ? (
                 <Stack spacing={1.5}>
-                  {activities.filter(a => a.status !== "PENDING").map((act) => (
+                  {timeline.map((act) => (
                     <Card
-                      key={act.activity_id}
+                      key={act.id}
                       variant="outlined"
                       sx={{
-                        p: 1.5,
-                        bgcolor: act.status === "COMPLETED" ? "rgba(76, 175, 80, 0.02)" : "inherit",
-                        borderLeft: FIELD_ACTIVITY_TYPES.includes(act.activity_type)
+                        p: 2,
+                        bgcolor: act.status === "COMPLETED" ? "rgba(76, 175, 80, 0.02)" : act.type === "visit" ? "rgba(99, 102, 241, 0.02)" : "inherit",
+                        borderLeft: act.type === "visit" 
+                          ? `3px solid #6366F1` 
+                          : FIELD_ACTIVITY_TYPES.includes(act.activity_type)
                           ? `3px solid ${act.gps_verified ? "#10B981" : "#EF4444"}`
                           : undefined
                       }}
                     >
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>
                           {act.activity_type} {act.call_result ? `(${act.call_result})` : ""}
                         </Typography>
                         <Stack direction="row" spacing={0.5} alignItems="center">
-                          {/* GPS badge for field visits */}
-                          {FIELD_ACTIVITY_TYPES.includes(act.activity_type) && (
+                          {/* GPS badge */}
+                          {act.gps_verified !== undefined && (
                             <Chip
                               label={act.gps_verified ? `✅ GPS Verified · ${act.distance_from_customer}m` : "⚠️ Not GPS Verified"}
                               size="small"
@@ -1581,7 +1641,7 @@ export const Clients: React.FC = () => {
                             size="small"
                             variant="outlined"
                             color={
-                              act.outcome === "Case Closed"
+                              act.outcome === "Case Closed" || act.outcome === "Payment Collected" || act.outcome === "PTP"
                                 ? "success"
                                 : act.outcome === "Follow-Up Required"
                                 ? "warning"
@@ -1591,11 +1651,74 @@ export const Clients: React.FC = () => {
                           />
                         </Stack>
                       </Stack>
-                      <Typography variant="body2" sx={{ color: "text.primary", mb: 0.5 }}>
+                      <Typography variant="body2" sx={{ color: "text.primary", mb: 1 }}>
                         {act.notes}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        Logged by: {act.creator?.full_name || "System"} ({act.creator?.role || "Staff"}) on {new Date(act.created_at).toLocaleString()}
+                      
+                      {/* Visit specific details & files */}
+                      {act.type === "visit" && (
+                        <Box sx={{ mt: 1.5, pt: 1, borderTop: "1px dashed rgba(0,0,0,0.08)" }}>
+                          {act.check_out_time && (
+                            <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
+                              <strong>Check-Out:</strong> {new Date(act.check_out_time).toLocaleString()} 
+                              {act.duration_seconds && ` · Duration: ${Math.floor(act.duration_seconds / 60)}m ${act.duration_seconds % 60}s`}
+                            </Typography>
+                          )}
+                          <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", gap: 1 }}>
+                            {act.photo_url && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                href={act.photo_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ fontSize: "10px", py: 0.2 }}
+                              >
+                                View Photo Proof
+                              </Button>
+                            )}
+                            {act.signature_url && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                href={act.signature_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ fontSize: "10px", py: 0.2 }}
+                              >
+                                View Signature
+                              </Button>
+                            )}
+                            {act.receipt_url && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                href={act.receipt_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ fontSize: "10px", py: 0.2 }}
+                              >
+                                View Receipt
+                              </Button>
+                            )}
+                            {act.document_url && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                href={act.document_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ fontSize: "10px", py: 0.2 }}
+                              >
+                                View Document
+                              </Button>
+                            )}
+                          </Stack>
+                        </Box>
+                      )}
+
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                        Logged by: {act.creator_name} ({act.creator_role}) on {new Date(act.timestamp).toLocaleString()}
                       </Typography>
                     </Card>
                   ))}

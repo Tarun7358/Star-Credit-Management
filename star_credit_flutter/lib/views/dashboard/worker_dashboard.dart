@@ -488,24 +488,24 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
                 final client = filteredClients[idx];
                 final isSelected = _selectedClient?.clientId == client.clientId;
                 return Card(
-                  color: isSelected ? Colors.white10 : null,
+                  color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.12) : null,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: isSelected ? Colors.white : Colors.white10,
+                      color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline.withOpacity(0.2),
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
                   child: ListTile(
                     title: Text(
                       client.customerName,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                     ),
                     subtitle: Text(
                       'Mobile: ${client.mobile} | ${AppConstants.stageLabels[client.status]}',
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                     ),
-                    trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+                    trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
                     onTap: () async {
                       if (_activeVisitId != null) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -548,7 +548,7 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
                     children: [
                       Text(
                         _selectedClient!.customerName,
-                        style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
                       ),
                       const SizedBox(height: 4),
                       if (_selectedClient!.outstandingAmount > 0)
@@ -570,7 +570,7 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
             // Checklist tasks
             Text(
               'Workflow Verification Checklist',
-              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
             ),
             const SizedBox(height: 8),
             Card(
@@ -591,12 +591,12 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
                             task.title,
                             style: TextStyle(
                               decoration: isCompleted ? TextDecoration.lineThrough : null,
-                              color: isCompleted ? Colors.white38 : Colors.white,
+                              color: isCompleted ? Theme.of(context).colorScheme.onSurface.withOpacity(0.38) : Theme.of(context).colorScheme.onSurface,
                               fontSize: 14,
                             ),
                           ),
-                          activeColor: Colors.white,
-                          checkColor: Colors.black,
+                          activeColor: Theme.of(context).colorScheme.primary,
+                          checkColor: Theme.of(context).colorScheme.onPrimary,
                           onChanged: (_) => _toggleTask(task),
                         );
                       },
@@ -618,7 +618,7 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
               children: [
                 Text(
                   'Uploaded Documents',
-                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
                 ),
                 TextButton.icon(
                   onPressed: _uploadDoc,
@@ -640,13 +640,13 @@ class _WorkerDashboardViewState extends State<WorkerDashboardView> {
                     final doc = _clientDocs[idx];
                     return ListTile(
                       dense: true,
-                      leading: const Icon(Icons.description, color: Colors.white),
+                      leading: Icon(Icons.description, color: Theme.of(context).colorScheme.onSurface),
                       title: Text(
                         doc['file_name'] ?? 'File',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text('Format: ${doc['document_type']} | Uploaded by: ${doc['uploader']?['full_name'] ?? 'System'}'),
-                      trailing: const Icon(Icons.open_in_new, color: Colors.white38, size: 18),
+                      trailing: Icon(Icons.open_in_new, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), size: 18),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Document Link: ${doc['file_url']}')),

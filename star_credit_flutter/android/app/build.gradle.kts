@@ -32,13 +32,6 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-
-    packaging {
-        jniLibs {
-            keepDebugSymbols.add("**/libflutter.so")
-            keepDebugSymbols.add("**/libapp.so")
-        }
-    }
 }
 
 kotlin {

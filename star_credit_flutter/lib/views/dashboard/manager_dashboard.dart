@@ -88,7 +88,7 @@ class _ManagerDashboardViewState extends State<ManagerDashboardView> {
                         style: GoogleFonts.outfit(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onBackground,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -127,7 +127,7 @@ class _ManagerDashboardViewState extends State<ManagerDashboardView> {
             // Queue detail list
             Text(
               'Awaiting Case Manager Assignment',
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onBackground),
             ),
             const SizedBox(height: 12),
             Card(
@@ -151,7 +151,7 @@ class _ManagerDashboardViewState extends State<ManagerDashboardView> {
                               children: [
                                 Text(
                                   client.customerName,
-                                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -241,7 +241,7 @@ class _ManagerDashboardViewState extends State<ManagerDashboardView> {
                     style: GoogleFonts.outfit(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],

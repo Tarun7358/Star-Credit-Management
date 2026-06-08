@@ -119,7 +119,7 @@ class _ReportsViewState extends State<ReportsView> {
         // Title
         Text(
           'Reports & Bulk Exporters',
-          style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+          style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
         ),
         Text(
           'Generate official agency case PDF documents or export clients lists to CSV spreadsheets.',
@@ -138,7 +138,7 @@ class _ReportsViewState extends State<ReportsView> {
                     children: [
                       Text(
                         'CSV Spreadsheet Exporter',
-                        style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -164,7 +164,7 @@ class _ReportsViewState extends State<ReportsView> {
                     children: [
                       Text(
                         'PDF Summary Reporter',
-                        style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                       ),
                       const SizedBox(height: 6),
                       Text(

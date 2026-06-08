@@ -43,10 +43,6 @@ class _LoginPageState extends State<LoginPage> {
       final authService = Provider.of<SupabaseService>(context, listen: false);
       await authService.login(email, password);
       
-      // Save credentials for biometric access on successful authentication
-      final bioService = Provider.of<BiometricService>(context, listen: false);
-      await bioService.saveCredentials(email, password);
-      
       if (mounted) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
       }
@@ -72,9 +68,16 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    final bool isEnrolled = await bioService.isEnrolled;
+    if (!isEnrolled) {
+      _showSnackbar('No biometrics enrolled. Please set up fingerprint/face lock in system settings.');
+      await bioService.openSecuritySettings();
+      return;
+    }
+
     final bool hasCreds = await bioService.hasSavedCredentials();
     if (!hasCreds) {
-      _showSnackbar('Please log in with email and password first to set up Biometric Quick Access.');
+      _showSnackbar('Please log in with email and password first and enable Biometrics in Settings.');
       return;
     }
 

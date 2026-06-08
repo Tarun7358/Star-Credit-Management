@@ -167,7 +167,7 @@ class _ClientsListPageState extends State<ClientsListPage> {
               children: [
                 Text(
                   'Clients Database Console',
-                  style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onBackground),
                 ),
                 Text(
                   'Manage clients details, view sensitive files, and monitor dispute actions.',

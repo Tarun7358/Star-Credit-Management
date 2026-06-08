@@ -80,7 +80,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                         style: GoogleFonts.outfit(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onBackground,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -172,7 +172,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                     style: GoogleFonts.outfit(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -194,7 +194,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           children: [
             Text(
               'Credit Score Target Distribution',
-              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
             Text(
@@ -280,7 +280,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           children: [
             Text(
               'Audit Operations Log',
-              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 16),
             ListView.separated(
@@ -300,7 +300,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                         children: [
                           Text(
                             log.userName ?? 'System User',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
                           ),
                           Text(
                             log.timestamp.toString().substring(11, 16),

@@ -7,7 +7,7 @@ interface User {
   name: string;
   phone: string;
   email: string;
-  role: "OWNER" | "MANAGER" | "WORKER" | "CLIENT" | "TELECALLER";
+  role: "OWNER" | "MANAGER" | "WORKER" | "CLIENT" | "TELECALLER" | "CLIENT_MANAGER";
   branch: string;
   joiningDate: string;
   agency: {
@@ -27,6 +27,7 @@ interface AuthContextType {
   isWorker: boolean;
   isClient: boolean;
   isTelecaller: boolean;
+  isClientManager: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -102,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: userData.full_name,
         phone: userData.phone,
         email: userData.email,
-        role: userData.role.toUpperCase() as "OWNER" | "MANAGER" | "WORKER" | "CLIENT" | "TELECALLER",
+        role: userData.role.toUpperCase() as "OWNER" | "MANAGER" | "WORKER" | "CLIENT" | "TELECALLER" | "CLIENT_MANAGER",
         branch: userData.branch || "Head Office",
         joiningDate,
         agency: {
@@ -159,6 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isWorker = user?.role === "WORKER";
   const isClient = user?.role === "CLIENT";
   const isTelecaller = user?.role === "TELECALLER";
+  const isClientManager = user?.role === "CLIENT_MANAGER";
 
   return (
     <AuthContext.Provider
@@ -171,7 +173,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isManager,
         isWorker,
         isClient,
-        isTelecaller
+        isTelecaller,
+        isClientManager
       }}
     >
       {children}
