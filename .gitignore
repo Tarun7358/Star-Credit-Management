@@ -53,3 +53,20 @@ Thumbs.db
 # ===========================
 *.tsbuildinfo
 frontend/tsconfig.tsbuildinfo
+# Flutter
+star_credit_flutter/.dart_tool/
+star_credit_flutter/.flutter-plugins
+star_credit_flutter/.flutter-plugins-dependencies
+star_credit_flutter/.packages
+star_credit_flutter/build/
+
+# Android Studio
+star_credit_flutter/android/.gradle/
+star_credit_flutter/android/local.properties
+
+# APKs
+*.apk
+*.aab
+
+# Coverage
+coverage/

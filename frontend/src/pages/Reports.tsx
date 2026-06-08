@@ -203,7 +203,7 @@ export const Reports: React.FC = () => {
       {/* Header */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Outfit', sans-serif" }}>
+          <Typography variant="h5" sx={{ fontWeight: 800 }}>
             Reports Dashboard
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -228,7 +228,7 @@ export const Reports: React.FC = () => {
               <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", fontWeight: 700 }}>
                 Total Leads Uploaded
               </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 800, mt: 1, fontFamily: "'Outfit', sans-serif" }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, mt: 1 }}>
                 {data.totalLeads}
               </Typography>
             </CardContent>
@@ -240,7 +240,7 @@ export const Reports: React.FC = () => {
               <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", fontWeight: 700 }}>
                 Lead Conversion
               </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 800, mt: 1, fontFamily: "'Outfit', sans-serif", color: "primary.main" }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, mt: 1, color: "primary.main" }}>
                 {data.conversionRate}%
               </Typography>
             </CardContent>
@@ -252,7 +252,7 @@ export const Reports: React.FC = () => {
               <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", fontWeight: 700 }}>
                 Docs Collected
               </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 800, mt: 1, fontFamily: "'Outfit', sans-serif", color: "secondary.main" }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, mt: 1, color: "secondary.main" }}>
                 {data.documentsCollected}
               </Typography>
             </CardContent>
@@ -264,7 +264,7 @@ export const Reports: React.FC = () => {
               <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", fontWeight: 700 }}>
                 Completed Cases
               </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 800, mt: 1, fontFamily: "'Outfit', sans-serif", color: "success.main" }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, mt: 1, color: "success.main" }}>
                 {data.completed}
               </Typography>
             </CardContent>
@@ -277,7 +277,7 @@ export const Reports: React.FC = () => {
         <Grid item xs={12} md={7}>
           <Card sx={{ p: 1 }}>
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, fontFamily: "'Outfit', sans-serif" }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
                 Monthly Conversion Breakdown
               </Typography>
               <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
@@ -319,7 +319,7 @@ export const Reports: React.FC = () => {
         <Grid item xs={12} md={5}>
           <Card sx={{ p: 1 }}>
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, fontFamily: "'Outfit', sans-serif" }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
                 Loan Type Breakdown
               </Typography>
               <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>

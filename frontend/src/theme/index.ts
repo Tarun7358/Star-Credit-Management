@@ -7,78 +7,108 @@ export const getTheme = (mode: "light" | "dark") => {
     palette: {
       mode,
       primary: {
-        main: "#6366f1", // Indigo
-        light: "#818cf8",
-        dark: "#4f46e5",
+        main: isDark ? "#ffffff" : "#000000",
+        light: isDark ? "#ffffff" : "#333333",
+        dark: isDark ? "#e5e5e5" : "#000000",
+        contrastText: isDark ? "#000000" : "#ffffff",
       },
       secondary: {
-        main: "#a855f7", // Violet/Purple
-        light: "#c084fc",
-        dark: "#9333ea",
+        main: isDark ? "#9ca3af" : "#6b7280",
+        light: isDark ? "#d1d5db" : "#9ca3af",
+        dark: isDark ? "#6b7280" : "#4b5563",
       },
       background: {
-        default: isDark ? "#0b0c10" : "#f8fafc",
-        paper: isDark ? "#11131f" : "#ffffff",
+        default: isDark ? "#000000" : "#f8f8f8",
+        paper: isDark ? "#121212" : "#ffffff",
       },
       text: {
-        primary: isDark ? "#f8fafc" : "#0f172a",
-        secondary: isDark ? "#94a3b8" : "#475569",
+        primary: isDark ? "#f9fafb" : "#111827",
+        secondary: isDark ? "#9ca3af" : "#6b7280",
       },
       success: {
-        main: "#10b981", // Emerald
+        main: "#10b981",
       },
       warning: {
-        main: "#f59e0b", // Amber
+        main: "#f59e0b",
       },
       error: {
-        main: "#ef4444", // Rose
+        main: "#ef4444",
       },
-      divider: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
+      info: {
+        main: "#3b82f6",
+      },
+      divider: isDark ? "#2d2d2d" : "#e5e7eb",
     },
     typography: {
-      fontFamily: "'Inter', sans-serif",
-      h1: { fontFamily: "'Outfit', sans-serif", fontWeight: 700 },
-      h2: { fontFamily: "'Outfit', sans-serif", fontWeight: 700 },
-      h3: { fontFamily: "'Outfit', sans-serif", fontWeight: 600 },
-      h4: { fontFamily: "'Outfit', sans-serif", fontWeight: 600 },
-      h5: { fontFamily: "'Outfit', sans-serif", fontWeight: 500 },
-      h6: { fontFamily: "'Outfit', sans-serif", fontWeight: 500 },
+      fontFamily: "'Inter', 'Poppins', sans-serif",
+      h1: { 
+        fontSize: "28px", 
+        fontWeight: 700,
+        letterSpacing: "-0.02em",
+      }, // Dashboard Titles
+      h2: { 
+        fontSize: "20px", 
+        fontWeight: 600,
+        letterSpacing: "-0.01em",
+      }, // Section Titles
+      h3: { 
+        fontSize: "24px", 
+        fontWeight: 700,
+      }, // Card Values
+      body1: { 
+        fontSize: "14px", 
+        fontWeight: 400,
+      }, // Body Text
+      body2: { 
+        fontSize: "14px", 
+        fontWeight: 500,
+      }, // Labels (Medium)
+      subtitle2: {
+        fontSize: "14px",
+        fontWeight: 500,
+      },
       button: {
         textTransform: "none",
         fontWeight: 600,
-        fontFamily: "'Outfit', sans-serif",
+        fontSize: "14px",
       },
     },
     components: {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: "16px",
+            borderRadius: "12px",
             backgroundImage: "none",
-            backgroundColor: isDark ? "rgba(17, 19, 31, 0.65)" : "#ffffff",
-            backdropFilter: isDark ? "blur(16px) saturate(120%)" : "none",
-            border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
-            boxShadow: isDark
-              ? "0 4px 30px rgba(0, 0, 0, 0.4)"
-              : "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+            backgroundColor: isDark ? "#121212" : "#ffffff",
+            border: isDark ? "1px solid #2d2d2d" : "1px solid #e5e7eb",
+            boxShadow: "none",
           },
         },
       },
       MuiButton: {
         styleOverrides: {
           root: {
-            borderRadius: "10px",
+            borderRadius: "8px",
             padding: "8px 18px",
             boxShadow: "none",
+            fontWeight: 600,
             "&:hover": {
               boxShadow: "none",
             },
           },
           containedPrimary: {
-            background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
-            color: "#ffffff",
+            backgroundColor: isDark ? "#ffffff" : "#000000",
+            color: isDark ? "#000000" : "#ffffff",
             "&:hover": {
-              background: "linear-gradient(135deg, #4f46e5 0%, #9333ea 100%)",
+              backgroundColor: isDark ? "#e5e5e5" : "#222222",
+            },
+          },
+          outlinedPrimary: {
+            borderColor: isDark ? "#ffffff" : "#000000",
+            color: isDark ? "#ffffff" : "#000000",
+            "&:hover": {
+              borderColor: isDark ? "#e5e5e5" : "#222222",
+              backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
             },
           },
         },
@@ -87,13 +117,17 @@ export const getTheme = (mode: "light" | "dark") => {
         styleOverrides: {
           root: {
             "& .MuiOutlinedInput-root": {
-              borderRadius: "10px",
-              backgroundColor: isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.01)",
+              borderRadius: "8px",
+              backgroundColor: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)",
               "& fieldset": {
-                borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+                borderColor: isDark ? "#2d2d2d" : "#e5e7eb",
               },
               "&:hover fieldset": {
-                borderColor: "#6366f1",
+                borderColor: isDark ? "#ffffff" : "#000000",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: isDark ? "#ffffff" : "#000000",
+                borderWidth: "1px",
               },
             },
           },

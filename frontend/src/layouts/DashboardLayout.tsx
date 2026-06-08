@@ -31,13 +31,16 @@ import {
   Sun,
   User as UserIcon,
   FileText,
-  TrendingUp
+  TrendingUp,
+  MapPin,
+  History,
+  Settings as SettingsIcon
 } from "lucide-react";
 
 const DRAWER_WIDTH = 260;
 
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, logout, isOwner, isTelecaller, isWorker } = useAuth();
+  const { user, logout, isOwner, isManager, isWorker } = useAuth();
   const { mode, toggleTheme } = useThemeContext();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -66,10 +69,13 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   // Define navigation items based on user role
   const menuItems = [
     { text: "Dashboard", path: "/", icon: <LayoutDashboard size={20} />, visible: true },
-    { text: "Leads Management", path: "/leads", icon: <FileSpreadsheet size={20} />, visible: isOwner },
-    { text: "My Assigned Leads", path: "/leads", icon: <FileText size={20} />, visible: isTelecaller || isWorker },
+    { text: "Clients Management", path: "/clients", icon: <FileSpreadsheet size={20} />, visible: isOwner || isManager },
+    { text: "My Assigned Cases", path: "/clients", icon: <FileText size={20} />, visible: isWorker },
     { text: "Employees Directory", path: "/employees", icon: <Users size={20} />, visible: isOwner },
-    { text: "Reports & Analytics", path: "/reports", icon: <TrendingUp size={20} />, visible: isOwner },
+    { text: "Reports & Analytics", path: "/reports", icon: <TrendingUp size={20} />, visible: isOwner || isManager },
+    { text: "Field Visits Map", path: "/visits-live", icon: <MapPin size={20} />, visible: isOwner || isManager },
+    { text: "Visit History Logs", path: "/visits-history", icon: <History size={20} />, visible: isOwner || isManager },
+    { text: "Profile Settings", path: "/settings", icon: <SettingsIcon size={20} />, visible: true },
   ];
 
   const drawerContent = (
@@ -78,19 +84,18 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
       <Box sx={{ p: 2.5, display: "flex", alignItems: "center", gap: 1.5 }}>
         <Avatar
           sx={{
-            bg: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
             bgcolor: "primary.main",
             width: 40,
             height: 40,
             fontWeight: "bold",
             fontSize: "1.2rem",
-            color: "#ffffff"
+            color: "background.paper"
           }}
         >
           SCM
         </Avatar>
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1, fontFamily: "'Outfit', sans-serif" }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
             STAR CREDIT
           </Typography>
           <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
@@ -98,7 +103,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           </Typography>
         </Box>
       </Box>
-      <Divider sx={{ opacity: 0.5 }} />
+      <Divider />
 
       {/* Main Nav Links */}
       <List sx={{ px: 1.5, py: 2, flexGrow: 1, display: "flex", flexDirection: "column", gap: 0.5 }}>
@@ -113,17 +118,17 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                   to={item.path}
                   onClick={isMobile ? handleDrawerToggle : undefined}
                   sx={{
-                    borderRadius: "10px",
+                    borderRadius: "8px",
                     py: 1.25,
                     px: 2,
-                    bgcolor: active ? "rgba(99, 102, 241, 0.08)" : "transparent",
-                    color: active ? "primary.main" : "text.secondary",
+                    bgcolor: active ? (mode === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)") : "transparent",
+                    color: active ? "text.primary" : "text.secondary",
                     "& .MuiListItemIcon-root": {
-                      color: active ? "primary.main" : "text.secondary",
+                      color: active ? "text.primary" : "text.secondary",
                       minWidth: 40,
                     },
                     "&:hover": {
-                      bgcolor: "rgba(255, 255, 255, 0.03)",
+                      bgcolor: mode === "dark" ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.02)",
                       color: "text.primary",
                       "& .MuiListItemIcon-root": {
                         color: "text.primary",
@@ -146,7 +151,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
 
       {/* Agency Context and User Quick view */}
       <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}>
-        <Avatar sx={{ bgcolor: "secondary.main", width: 36, height: 36 }}>
+        <Avatar sx={{ bgcolor: "divider", color: "text.primary", width: 36, height: 36 }}>
           <UserIcon size={18} />
         </Avatar>
         <Box sx={{ overflow: "hidden", flexGrow: 1 }}>
@@ -172,7 +177,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           ml: isMobile ? 0 : `${DRAWER_WIDTH}px`,
           borderBottom: "1px solid",
           borderColor: "divider",
-          bgcolor: mode === "dark" ? "rgba(11, 12, 16, 0.8)" : "rgba(255, 255, 255, 0.8)",
+          bgcolor: mode === "dark" ? "rgba(0, 0, 0, 0.8)" : "rgba(248, 248, 248, 0.8)",
           backdropFilter: "blur(12px)",
           zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
@@ -184,7 +189,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 <MenuIcon size={22} />
               </IconButton>
             )}
-            <Typography variant="h6" noWrap sx={{ fontWeight: 800, fontFamily: "'Outfit', sans-serif" }}>
+            <Typography variant="h6" noWrap sx={{ fontWeight: 800 }}>
               {menuItems.find((item) => item.path === location.pathname)?.text || "SCM Portal"}
             </Typography>
           </Box>
@@ -245,7 +250,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             ModalProps={{ keepMounted: true }}
             sx={{
               display: { xs: "block", md: "none" },
-              "& .MuiDrawer-paper": { boxSizing: "border-box", width: DRAWER_WIDTH, borderRight: "1px solid rgba(255,255,255,0.08)" },
+              "& .MuiDrawer-paper": { boxSizing: "border-box", width: DRAWER_WIDTH, borderRight: "1px solid", borderColor: "divider" },
             }}
           >
             {drawerContent}
@@ -256,7 +261,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             open
             sx={{
               display: { xs: "none", md: "block" },
-              "& .MuiDrawer-paper": { boxSizing: "border-box", width: DRAWER_WIDTH, borderRight: "1px solid rgba(255,255,255,0.08)" },
+              "& .MuiDrawer-paper": { boxSizing: "border-box", width: DRAWER_WIDTH, borderRight: "1px solid", borderColor: "divider" },
             }}
           >
             {drawerContent}

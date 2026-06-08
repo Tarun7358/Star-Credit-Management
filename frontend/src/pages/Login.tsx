@@ -50,10 +50,10 @@ export const Login: React.FC = () => {
         alignItems: "center",
         justifyContent: "center",
         p: 3,
-        background: "radial-gradient(circle at 50% 10%, #1c2135 0%, #0b0c10 80%)"
+        bgcolor: "background.default",
       }}
     >
-      <Card sx={{ maxWidth: 420, width: "100%", p: 2, borderRadius: "16px", backdropFilter: "blur(20px)", bgcolor: "rgba(23, 27, 43, 0.8)", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+      <Card sx={{ maxWidth: 420, width: "100%", p: 2.5 }}>
         <CardContent>
           {/* Logo Header */}
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 4 }}>
@@ -61,17 +61,16 @@ export const Login: React.FC = () => {
               sx={{
                 p: 1.5,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                bgcolor: "primary.main",
                 mb: 2,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 8px 20px rgba(99, 102, 241, 0.3)"
               }}
             >
-              <ShieldCheck size={38} color="#ffffff" />
+              <ShieldCheck size={36} color="var(--panel-bg)" />
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Outfit', sans-serif", letterSpacing: -0.5, mb: 0.5 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: -0.5, mb: 0.5 }}>
               Star Credit Management
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", fontSize: "0.75rem" }}>
@@ -134,7 +133,7 @@ export const Login: React.FC = () => {
 
       {/* Forgot Password Dialog */}
       <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} PaperProps={{ sx: { borderRadius: "12px", p: 1 } }}>
-        <DialogTitle sx={{ fontWeight: 700, fontFamily: "'Outfit', sans-serif" }}>Password Recovery Information</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Password Recovery Information</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ fontSize: "0.95rem", lineHeight: 1.6 }}>
             Access control for Star Credit Management is invite-based and controlled strictly by administrators.

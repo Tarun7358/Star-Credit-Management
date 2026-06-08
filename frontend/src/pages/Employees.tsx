@@ -194,7 +194,7 @@ export const Employees: React.FC = () => {
       {/* Header section */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "'Outfit', sans-serif" }}>
+          <Typography variant="h5" sx={{ fontWeight: 800 }}>
             Employees Module
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -286,7 +286,7 @@ export const Employees: React.FC = () => {
           ADD EMPLOYEE DIALOG
           ========================================== */}
       <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)}>
-        <DialogTitle sx={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700 }}>Add Employee Account</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Add Employee Account</DialogTitle>
         <form onSubmit={handleCreateEmployee}>
           <DialogContent>
             <Box sx={{ pt: 1, display: "flex", flexDirection: "column", gap: 2.5, minWidth: 350 }}>
@@ -360,7 +360,7 @@ export const Employees: React.FC = () => {
           CHANGE PASSWORD DIALOG
           ========================================== */}
       <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)}>
-        <DialogTitle sx={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700 }}>Reset Password</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Reset Password</DialogTitle>
         <form onSubmit={handleResetPassword}>
           <DialogContent>
             <Box sx={{ pt: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 300 }}>

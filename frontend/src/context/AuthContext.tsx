@@ -7,7 +7,7 @@ interface User {
   name: string;
   phone: string;
   email: string;
-  role: "OWNER" | "TELECALLER" | "WORKER";
+  role: "OWNER" | "MANAGER" | "WORKER" | "CLIENT" | "TELECALLER";
   branch: string;
   joiningDate: string;
   agency: {
@@ -23,8 +23,10 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isOwner: boolean;
-  isTelecaller: boolean;
+  isManager: boolean;
   isWorker: boolean;
+  isClient: boolean;
+  isTelecaller: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async () => {
+    setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -59,8 +62,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error || !userData) {
         console.error("Profile not found in users table:", error);
+        await supabase.auth.signOut();
         setUser(null);
         setLoading(false);
+        alert("Your profile was not found in the database 'users' table. Please ensure you have completed Step 5 of the setup instructions (linking your Supabase Auth user ID to the public.users table in the SQL Editor).");
         return;
       }
 
@@ -97,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: userData.full_name,
         phone: userData.phone,
         email: userData.email,
-        role: userData.role.toUpperCase() as "OWNER" | "TELECALLER" | "WORKER",
+        role: userData.role.toUpperCase() as "OWNER" | "MANAGER" | "WORKER" | "CLIENT" | "TELECALLER",
         branch: userData.branch || "Head Office",
         joiningDate,
         agency: {
@@ -133,7 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
@@ -141,7 +145,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       // fetchProfile will be automatically triggered by onAuthStateChange
     } catch (err) {
-      setLoading(false);
       throw err;
     }
   };
@@ -152,8 +155,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isOwner = user?.role === "OWNER";
-  const isTelecaller = user?.role === "TELECALLER";
+  const isManager = user?.role === "MANAGER";
   const isWorker = user?.role === "WORKER";
+  const isClient = user?.role === "CLIENT";
+  const isTelecaller = user?.role === "TELECALLER";
 
   return (
     <AuthContext.Provider
@@ -163,8 +168,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         isOwner,
-        isTelecaller,
-        isWorker
+        isManager,
+        isWorker,
+        isClient,
+        isTelecaller
       }}
     >
       {children}

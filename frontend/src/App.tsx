@@ -7,9 +7,12 @@ import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
-import { Leads } from "./pages/Leads";
+import { Clients } from "./pages/Clients";
 import { Employees } from "./pages/Employees";
 import { Reports } from "./pages/Reports";
+import VisitsLive from "./pages/VisitsLive";
+import VisitsHistory from "./pages/VisitsHistory";
+import Settings from "./pages/Settings";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { Box, CircularProgress } from "@mui/material";
 
@@ -86,10 +89,10 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
-            path="/leads"
+            path="/clients"
             element={
               <PrivateRoute>
-                <Leads />
+                <Clients />
               </PrivateRoute>
             }
           />
@@ -104,8 +107,32 @@ const AppContent: React.FC = () => {
           <Route
             path="/reports"
             element={
-              <PrivateRoute requiresOwner>
+              <PrivateRoute>
                 <Reports />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/visits-live"
+            element={
+              <PrivateRoute>
+                <VisitsLive />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/visits-history"
+            element={
+              <PrivateRoute>
+                <VisitsHistory />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <Settings />
               </PrivateRoute>
             }
           />
