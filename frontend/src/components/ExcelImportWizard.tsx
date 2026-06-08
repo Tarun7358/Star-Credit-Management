@@ -27,7 +27,7 @@ import {
   Card,
   Grid
 } from "@mui/material";
-import { Check, AlertTriangle, Upload, ChevronRight, RefreshCw, UserCheck } from "lucide-react";
+import { Check, AlertTriangle, Upload, ChevronRight, RefreshCw } from "lucide-react";
 
 interface ExcelImportWizardProps {
   open: boolean;
