@@ -112,7 +112,6 @@ CREATE POLICY "Activities select policy" ON public.customer_activities
         )
     )
     OR customer_activities.created_by  = auth.uid()
-    OR customer_activities.employee_id = auth.uid()
   );
 
 -- 9. Customer Activities - Insert Policy
