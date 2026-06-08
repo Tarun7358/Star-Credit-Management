@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import { supabase } from "../utils/supabaseClient";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -23,44 +24,54 @@ import {
 import { Download, TableProperties } from "lucide-react";
 
 export const Reports: React.FC = () => {
+  const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const loadReportData = async () => {
     try {
       setLoading(true);
+      if (!user?.agency?.id) return;
       
-      // Fetch all leads for the current agency
-      const { data: leadsData, error: leadsErr } = await supabase
-        .from("leads")
-        .select("lead_id, loan_type, loan_amount, status");
+      // Fetch all clients for the current agency
+      const { data: clientsData, error: clientsErr } = await supabase
+        .from("clients")
+        .select("client_id, status, priority")
+        .eq("agency_id", user.agency.id)
+        .eq("is_archived", false);
 
-      if (leadsErr) throw leadsErr;
+      if (clientsErr) throw clientsErr;
 
-      const totalLeads = leadsData?.length || 0;
-      const contacted = leadsData?.filter(l => l.status === "CONTACTED").length || 0;
-      const interested = leadsData?.filter(l => l.status === "INTERESTED").length || 0;
-      const completed = leadsData?.filter(l => l.status === "CLOSED").length || 0;
+      const totalLeads = clientsData?.length || 0;
+      const contacted = clientsData?.filter(c => c.status !== "NEW_LEAD").length || 0;
+      const interested = clientsData?.filter(c => !["NEW_LEAD", "VERIFICATION"].includes(c.status)).length || 0;
+      const completed = clientsData?.filter(c => c.status === "COMPLETED").length || 0;
 
-      // Count total documents in agency
-      const { count: docsCount, error: docsErr } = await supabase
-        .from("documents")
-        .select("*", { count: "exact", head: true });
-
-      if (docsErr) throw docsErr;
-      const documentsCollected = docsCount || 0;
+      // Documents collected are cases that progressed to DOCUMENT_COLLECTION or later
+      const documentsCollected = clientsData?.filter(c => 
+        !["NEW_LEAD", "VERIFICATION"].includes(c.status)
+      ).length || 0;
 
       const conversionRate = totalLeads > 0 ? Math.round((completed / totalLeads) * 1000) / 10 : 0;
 
-      // Group by loan type
-      const loanTypes = ["HOME", "BIKE", "PERSONAL", "MORTGAGE", "BUSINESS"];
-      const breakdown = loanTypes.map(type => {
-        const typeLeads = leadsData?.filter(l => l.loan_type === type) || [];
-        const totalAmount = typeLeads.reduce((sum, l) => sum + (parseFloat(l.loan_amount) || 0), 0);
+      // Group by workflow stages
+      const stages = [
+        { key: "NEW_LEAD", label: "New Lead" },
+        { key: "VERIFICATION", label: "Verification" },
+        { key: "DOCUMENT_COLLECTION", label: "Document Collection" },
+        { key: "CREDIT_ANALYSIS", label: "Credit Analysis" },
+        { key: "DISPUTE_CREATION", label: "Report Corrections" },
+        { key: "BUREAU_SUBMISSION", label: "Submit to Credit Company" },
+        { key: "REVIEW", label: "Review Case" },
+        { key: "FOLLOW_UP", label: "Follow-Up" },
+        { key: "COMPLETED", label: "Completed" }
+      ];
+
+      const breakdown = stages.map(stage => {
+        const stageClients = clientsData?.filter(c => c.status === stage.key) || [];
         return {
-          loanType: type,
-          count: typeLeads.length,
-          totalAmount: Math.round(totalAmount * 100) / 100
+          stageLabel: stage.label,
+          count: stageClients.length
         };
       });
 
@@ -81,8 +92,10 @@ export const Reports: React.FC = () => {
   };
 
   useEffect(() => {
-    loadReportData();
-  }, []);
+    if (user) {
+      loadReportData();
+    }
+  }, [user]);
 
   // PDF Export using jsPDF and jspdf-autotable
   const exportPDF = () => {
@@ -108,12 +121,12 @@ export const Reports: React.FC = () => {
 
     const summaryData = [
       ["Metric Description", "Value"],
-      ["Total Customer Leads Uploaded", String(data.totalLeads)],
-      ["Leads Contacted (Completed Call Attempt)", String(data.contacted)],
-      ["Leads Expressing Interest", String(data.interested)],
+      ["Total Active Customers", String(data.totalLeads)],
+      ["Customers Contacted (Status past New)", String(data.contacted)],
+      ["Customers In Process (Documents/Analysis/Disputes)", String(data.interested)],
       ["Worker Document Bundles Collected", String(data.documentsCollected)],
-      ["Cases Completed & Disbursed", String(data.completed)],
-      ["Overall Intermediary Conversion Rate", `${data.conversionRate}%`]
+      ["Cases Completed & Resolved", String(data.completed)],
+      ["Overall Resolution / Conversion Rate", `${data.conversionRate}%`]
     ];
 
     autoTable(doc, {
@@ -127,13 +140,12 @@ export const Reports: React.FC = () => {
 
     // Breakdown Section
     const nextY = (doc as any).lastAutoTable.finalY + 12;
-    doc.text("2. Loan Type Volume Breakdown", 14, nextY);
+    doc.text("2. Workflow Stage Volume Breakdown", 14, nextY);
 
-    const breakdownHeaders = ["Loan Category", "Total Cases", "Combined Capital Value (Lakhs)"];
+    const breakdownHeaders = ["Workflow Stage", "Total Active Cases"];
     const breakdownRows = data.breakdown.map((item: any) => [
-      item.loanType,
-      String(item.count),
-      `₹${item.totalAmount} Lakhs`
+      item.stageLabel,
+      String(item.count)
     ]);
 
     autoTable(doc, {
@@ -165,9 +177,9 @@ export const Reports: React.FC = () => {
 
     // Summary sheet
     const summaryRows = [
-      { Metric: "Total Leads Imported", Value: data.totalLeads },
-      { Metric: "Leads Contacted", Value: data.contacted },
-      { Metric: "Interested Leads", Value: data.interested },
+      { Metric: "Total Active Customers", Value: data.totalLeads },
+      { Metric: "Customers Contacted", Value: data.contacted },
+      { Metric: "Customers In Process", Value: data.interested },
       { Metric: "Documents Collected", Value: data.documentsCollected },
       { Metric: "Completed Cases", Value: data.completed },
       { Metric: "Overall Conversion Rate", Value: `${data.conversionRate}%` }
@@ -175,9 +187,8 @@ export const Reports: React.FC = () => {
 
     // Breakdown sheet
     const breakdownRows = data.breakdown.map((item: any) => ({
-      "Loan Type": item.loanType,
-      "Lead Count": item.count,
-      "Total Amount (Lakhs)": item.totalAmount
+      "Workflow Stage": item.stageLabel,
+      "Active Cases": item.count
     }));
 
     const wb = XLSX.utils.book_new();
@@ -185,7 +196,7 @@ export const Reports: React.FC = () => {
     const wsBreakdown = XLSX.utils.json_to_sheet(breakdownRows);
 
     XLSX.utils.book_append_sheet(wb, wsSummary, "Executive Summary");
-    XLSX.utils.book_append_sheet(wb, wsBreakdown, "Category Breakdown");
+    XLSX.utils.book_append_sheet(wb, wsBreakdown, "Stage Breakdown");
 
     XLSX.writeFile(wb, `SCM_Operational_Data_${Date.now()}.xlsx`);
   };
@@ -226,7 +237,7 @@ export const Reports: React.FC = () => {
           <Card>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", fontWeight: 700 }}>
-                Total Leads Uploaded
+                Total Active Customers
               </Typography>
               <Typography variant="h4" sx={{ fontWeight: 800, mt: 1 }}>
                 {data.totalLeads}
@@ -238,7 +249,7 @@ export const Reports: React.FC = () => {
           <Card>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", fontWeight: 700 }}>
-                Lead Conversion
+                Resolution Rate
               </Typography>
               <Typography variant="h4" sx={{ fontWeight: 800, mt: 1, color: "primary.main" }}>
                 {data.conversionRate}%
@@ -290,7 +301,7 @@ export const Reports: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     <TableRow hover>
-                      <TableCell sx={{ fontWeight: 600 }}>Total Leads Received</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Total Active Customers</TableCell>
                       <TableCell align="right">{data.totalLeads}</TableCell>
                     </TableRow>
                     <TableRow hover>
@@ -298,7 +309,7 @@ export const Reports: React.FC = () => {
                       <TableCell align="right">{data.contacted}</TableCell>
                     </TableRow>
                     <TableRow hover>
-                      <TableCell sx={{ fontWeight: 600 }}>Interested Leads</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>In Process Cases</TableCell>
                       <TableCell align="right">{data.interested}</TableCell>
                     </TableRow>
                     <TableRow hover>
@@ -306,7 +317,7 @@ export const Reports: React.FC = () => {
                       <TableCell align="right">{data.documentsCollected}</TableCell>
                     </TableRow>
                     <TableRow hover>
-                      <TableCell sx={{ fontWeight: 600 }}>Completed Closures</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Completed Resolved</TableCell>
                       <TableCell align="right">{data.completed}</TableCell>
                     </TableRow>
                   </TableBody>
@@ -320,23 +331,21 @@ export const Reports: React.FC = () => {
           <Card sx={{ p: 1 }}>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                Loan Type Breakdown
+                Workflow Stage Breakdown
               </Typography>
               <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700 }}>Loan Type</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }} align="right">Leads</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }} align="right">Capital (Lakhs)</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Workflow Stage</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }} align="right">Active Cases</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {data.breakdown.map((item: any) => (
-                      <TableRow key={item.loanType} hover>
-                        <TableCell sx={{ fontWeight: 600 }}>{item.loanType}</TableCell>
+                      <TableRow key={item.stageLabel} hover>
+                        <TableCell sx={{ fontWeight: 600 }}>{item.stageLabel}</TableCell>
                         <TableCell align="right">{item.count}</TableCell>
-                        <TableCell align="right">₹{item.totalAmount}L</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
